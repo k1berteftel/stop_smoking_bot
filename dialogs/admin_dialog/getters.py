@@ -105,7 +105,7 @@ async def get_static(clb: CallbackQuery, widget: Button, dialog_manager: DialogM
         statuses[user.AI.status] = statuses.get(user.AI.status) + 1
 
     text = (
-        f'<b>Статистика на {datetime.datetime.today().strftime('%d-%m-%Y')}</b>\n\nВсего пользователей: {len(users)}'
+        f'<b>Статистика на {datetime.datetime.today().strftime("%d-%m-%Y")}</b>\n\nВсего пользователей: {len(users)}'
         f'\n - Активные пользователи(не заблокировали бота): {active}\n - Пользователей заблокировали '
         f'бота: {len(users) - active}\n - Провзаимодействовали с ботом за последние 24 часа: {activity}'
         f'\n - Пользователей с подпиской: {subs}\n\n'
