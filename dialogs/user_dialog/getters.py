@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from aiogram import Bot
 from aiogram.types import (CallbackQuery, User, Message, LabeledPrice, InlineKeyboardButton,
@@ -7,7 +8,7 @@ from aiogram_dialog.api.entities import MediaAttachment, MediaId
 from aiogram_dialog.widgets.kbd import Button, Select
 from aiogram_dialog.widgets.input import ManagedTextInput
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from yookassa import Payment, Configuration
+from yookassa import Payment, Configuration, Payout
 
 from utils.prices_funcs import get_usdt_rub
 from utils.schdulers import check_payment
@@ -244,7 +245,6 @@ async def get_derive_card_getter(event_from_user: User, dialog_manager: DialogMa
     }
 
 
-
 async def get_derive_card(msg: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
     session: DataInteraction = dialog_manager.middleware_data.get('session')
     translator: Translator = dialog_manager.middleware_data.get('translator')
@@ -257,8 +257,31 @@ async def get_derive_card(msg: Message, widget: ManagedTextInput, dialog_manager
     if len(str(card)) != 16:
         await msg.answer(translator['enough_card_len_warning'])
         return
-    await msg.answer(translator['start_money_transfer'])
-
+    message = await msg.answer(translator['start_money_transfer'])
+    amount = dialog_manager.dialog_data.get("amount")
+    idempotence_key = str(uuid.uuid4())
+    payout = await Payout.create({
+        "amount": {
+            "value": str(float(amount)),
+            "currency": "RUB"
+        },
+        "payout_destination_data": {
+            "type": "bank_card",
+            "card": {
+                "number": str(card)
+            }
+        },
+        "description": "Выплата по реферальной программе",
+    }, idempotence_key)
+    payout_id = payout.id
+    while payout.status != 'succeeded':
+        payout = await Payout.find_one(payout_id)
+        await asyncio.sleep(0.5)
+    await session.update_user_balance(msg.from_user.id, -amount, 'rub')
+    await message.delete()
+    await msg.answer(translator['success_payout'])
+    dialog_manager.dialog_data.clear()
+    await dialog_manager.switch_to(startSG.ref_menu)
 
 
 async def info_getter(event_from_user: User, dialog_manager: DialogManager, **kwargs):
