@@ -1,13 +1,13 @@
 import uuid
 from aiogram import Bot
 from aiogram.types import (CallbackQuery, User, Message, LabeledPrice, InlineKeyboardButton,
-                           InlineKeyboardMarkup)
+                           InlineKeyboardMarkup, ContentType)
 from aiogram_dialog import DialogManager, ShowMode
-from aiogram_dialog.api.entities import MediaAttachment
+from aiogram_dialog.api.entities import MediaAttachment, MediaId
 from aiogram_dialog.widgets.kbd import Button, Select
 from aiogram_dialog.widgets.input import ManagedTextInput
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from yookassa import Payment
+from yookassa import Payment, Configuration
 
 from utils.prices_funcs import get_usdt_rub
 from utils.schdulers import check_payment
@@ -17,12 +17,17 @@ from config_data.config import load_config, Config
 from states.state_groups import startSG
 
 
+Configuration.account_id = 286317
+Configuration.secret_key = 'live_ZWfufpazd2XRr68N5w8U6gLel2YnN4CQXFyPlJWXPN0'
+
 config: Config = load_config()
 
 
 async def start_getter(event_from_user: User, dialog_manager: DialogManager, **kwargs):
     session: DataInteraction = dialog_manager.middleware_data.get('session')
     translator: Translator = dialog_manager.middleware_data.get('translator')
+    media_id = MediaId(file_id='AgACAgIAAxkBAAM3Z-QLzEXIBU865pSSPn69jafliXQAAnD8MRummCFL-zpvZdAR1SEBAAMCAAN5AAM2BA')
+    media = MediaAttachment(file_id=media_id, type=ContentType.PHOTO)
     admin = False
     if event_from_user.id in config.bot.admin_ids:
         admin = True
@@ -32,6 +37,7 @@ async def start_getter(event_from_user: User, dialog_manager: DialogManager, **k
         'sub': translator['sub_button'],
         'info': translator['info_button'],
         'close': translator['close_button'],
+        'media': media,
         'admin': admin
     }
 
@@ -39,6 +45,38 @@ async def start_getter(event_from_user: User, dialog_manager: DialogManager, **k
 async def close_dialog(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
     await dialog_manager.done()
     await clb.message.delete()
+
+
+async def get_voucher(msg: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    translator: Translator = dialog_manager.middleware_data.get('translator')
+    await msg.delete()
+    if await session.check_voucher(msg.from_user.id, text):
+        amount = await session.get_voucher_amount(text)
+        await session.set_trial_sub(msg.from_user.id, amount)
+        await msg.answer(translator['success_voucher_notification'])
+        await dialog_manager.switch_to(startSG.sub_menu)
+    else:
+        await msg.answer(translator['no_voucher_notification'])
+
+
+async def get_voucher_getter(event_from_user: User, dialog_manager: DialogManager, **kwargs):
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    translator: Translator = dialog_manager.middleware_data.get('translator')
+    return {
+        'text': translator['voucher'],
+        'back': translator['back'],
+    }
+
+
+async def ref_menu_switcher(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    user = await session.get_user(clb.from_user.id)
+    if not user.sub:
+        translator: Translator = dialog_manager.middleware_data.get('translator')
+        await clb.answer(translator['no_sub_warning'])
+        return
+    await dialog_manager.switch_to(startSG.ref_menu)
 
 
 async def sub_menu_getter(event_from_user: User, dialog_manager: DialogManager, **kwargs):
@@ -55,8 +93,10 @@ async def sub_menu_getter(event_from_user: User, dialog_manager: DialogManager, 
         'rub': translator['rub_button'],
         'stars': translator['stars_button'],
         'ton': translator['ton_button'],
+        'voucher': translator['voucher_button'],
         'back': translator['back'],
-        'ru': user.locale == 'ru'
+        'ru': user.locale == 'ru',
+        'en': user.locale == 'en'
     }
 
 
@@ -167,6 +207,58 @@ async def ref_menu_getter(event_from_user: User, dialog_manager: DialogManager, 
         'user_id': user.user_id,
         'back': translator['back']
     }
+
+
+async def get_derive_amount_getter(event_from_user: User, dialog_manager: DialogManager, **kwargs):
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    translator: Translator = dialog_manager.middleware_data.get('translator')
+    return {
+        'text': translator['derive'],
+        'back': translator['back']
+    }
+
+
+async def get_derive_amount(msg: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    translator: Translator = dialog_manager.middleware_data.get('translator')
+    await msg.delete()
+    try:
+        amount = int(text)
+    except Exception:
+        await msg.answer(translator['derive_integer_warning'])
+        return
+    user = await session.get_user(msg.from_user.id)
+    if amount > user.balance.rub:
+        await msg.answer(translator['derive_enough_warning'])
+        return
+    dialog_manager.dialog_data['amount'] = amount
+    await dialog_manager.switch_to(startSG.get_derive_card)
+
+
+async def get_derive_card_getter(event_from_user: User, dialog_manager: DialogManager, **kwargs):
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    translator: Translator = dialog_manager.middleware_data.get('translator')
+    return {
+        'text': translator['derive_card'],
+        'back': translator['back']
+    }
+
+
+
+async def get_derive_card(msg: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    translator: Translator = dialog_manager.middleware_data.get('translator')
+    await msg.delete()
+    try:
+        card = int(''.join([card for card in text.strip().split(' ')]))
+    except Exception:
+        await msg.answer(translator['only_integer_card_warning'])
+        return
+    if len(str(card)) != 16:
+        await msg.answer(translator['enough_card_len_warning'])
+        return
+    await msg.answer(translator['start_money_transfer'])
+
 
 
 async def info_getter(event_from_user: User, dialog_manager: DialogManager, **kwargs):

@@ -58,13 +58,20 @@ async def get_user_id(msg: Message, widget: ManagedTextInput, dialog_manager: Di
     try:
         user_id = int(text)
     except Exception:
-        await msg.answer('Значение должно быть числом, пожалуйста попробуйте снова')
-        return
+        if not text.startswith('@'):
+            await msg.answer('Значение должно быть числом, пожалуйста попробуйте снова')
+            return
+        user_id = text[1::]
     session: DataInteraction = dialog_manager.middleware_data.get('session')
-    user = await session.get_user(user_id)
+    if isinstance(user_id, int):
+        user = await session.get_user(user_id)
+    else:
+        user = await session.get_user_by_username(user_id)
     if user is None:
         await msg.answer('Такого пользователя нету в базе данных бота, пожалуйста попробуйте снова')
         return
+    if isinstance(user_id, str):
+        user_id = user.user_id
     dialog_manager.dialog_data['user_id'] = user_id
     await dialog_manager.switch_to(adminSG.user_condition_menu)
 

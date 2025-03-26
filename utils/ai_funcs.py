@@ -1,6 +1,7 @@
 import asyncio
 from typing import Literal
 from openai import AsyncOpenAI
+from config_data.config import Config, load_config
 from openai._exceptions import NotFoundError
 from pathlib import Path
 from dataclasses import dataclass
@@ -10,16 +11,17 @@ import httpx
 from prompts.funcs import get_current_prompt
 
 
+config: Config = load_config()
+
+
 @dataclass
 class SystemMessage:
     role: Literal['user', 'assistant']
     content: str
 
 
-api_key = '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'
-
 client = AsyncOpenAI(
-    api_key=api_key,
+    api_key=config.ai.token,
     http_client=httpx.AsyncClient(proxy='http://eAzEJHXk:6WL4egih@109.205.62.47:64856')
 )
 

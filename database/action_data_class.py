@@ -1,11 +1,12 @@
 from typing import Literal
-from datetime import datetime
+import datetime
 from sqlalchemy import select, insert, update, column, text, delete, and_
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from database.model import (UsersTable, DeeplinksTable, AdminsTable, OneTimeLinksIdsTable,
                             VouchersTable, UserVouchersTable, BalanceTable, PricesTable, UserAI,
                             TextsTable)
+from dateutil.relativedelta import relativedelta
 
 
 async def configurate_tables(sessions: async_sessionmaker):
@@ -158,6 +159,11 @@ class DataInteraction():
             result = await session.scalar(select(UsersTable).where(UsersTable.user_id == user_id))
         return result
 
+    async def get_user_by_username(self, username: str):
+        async with self._sessions() as session:
+            result = await session.scalar(select(UsersTable).where(UsersTable.username == username))
+        return result
+
     async def get_users_by_join_link(self, deeplink: str):
         async with self._sessions() as session:
             result = await session.scalars(select(UsersTable).where(UsersTable.join == deeplink))
@@ -185,7 +191,7 @@ class DataInteraction():
 
     async def get_text(self, column: str):
         async with self._sessions() as session:
-            result = await session.scalar(select(column).where(TextsTable.id == 1))
+            result = await session.scalar(select(text(column)).where(TextsTable.id == 1))
         return result
 
     async def get_texts(self):
@@ -216,6 +222,27 @@ class DataInteraction():
                 ))
             await session.commit()
 
+    async def set_trial_sub(self, user_id: int, months: int | None):
+        user = await self.get_user(user_id)
+        async with self._sessions() as session:
+            if months is None:
+                await session.execute(update(UsersTable).where(UsersTable.user_id == user).values(
+                    trial_sub=None,
+                    sub=None
+                ))
+                await session.commit()
+                return
+            if user.trial_sub:
+                await session.execute(update(UsersTable).where(UsersTable.user_id == user).values(
+                    trial_sub=UsersTable.trial_sub + relativedelta(months=months)
+                ))
+            else:
+                await session.execute(update(UsersTable).where(UsersTable.user_id == user).values(
+                    trial_sub=datetime.datetime.today() + relativedelta(months=months),
+                    sub=True
+                ))
+            await session.commit()
+
     async def set_locale(self, user_id: int, locale: str):
         async with self._sessions() as session:
             await session.execute(update(UsersTable).where(UsersTable.user_id == user_id).values(
@@ -240,7 +267,7 @@ class DataInteraction():
     async def set_activity(self, user_id: int):
         async with self._sessions() as session:
             await session.execute(update(UsersTable).where(UsersTable.user_id == user_id).values(
-                activity=datetime.today()
+                activity=datetime.datetime.today()
             ))
             await session.commit()
 

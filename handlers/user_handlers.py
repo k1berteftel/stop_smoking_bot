@@ -1,3 +1,5 @@
+import datetime
+
 from aiogram import Router, F, Bot
 from aiogram.filters import CommandStart, CommandObject, Command
 from aiogram.types import Message, CallbackQuery
@@ -90,6 +92,11 @@ async def start_vip_dialog(msg: Message, dialog_manager: DialogManager, state: F
     await dialog_manager.start(states.startSG.sub_menu, mode=StartMode.RESET_STACK)
 
 
+#@user_router.message()
+#async def get_photo_id(msg: Message):
+    #await msg.reply(msg.photo[-1].file_id)
+
+
 @user_router.message(F.text)
 async def answer_message(msg: Message, dialog_manager: DialogManager, state: FSMContext, session: DataInteraction, scheduler: AsyncIOScheduler, translator: Translator):
     if dialog_manager.has_context():
@@ -111,6 +118,11 @@ async def answer_message(msg: Message, dialog_manager: DialogManager, state: FSM
             await session.set_user_ai_data(msg.from_user.id, assistant_id=assistant_id, thread_id=thread_id)
         await state.update_data(assistant_id=assistant_id, thread_id=thread_id)
     if user_ai.status != 1 and not user.sub:
+        keyboard = await get_only_vip_keyboard(translator)
+        await msg.answer(translator['only_vip_warning'], reply_markup=keyboard)
+        return
+    if user.sub and user.trial_sub and user.trial_sub.timestamp() < datetime.datetime.today().timestamp():
+        await session.set_trial_sub(user_id=msg.from_user.id, months=None)
         keyboard = await get_only_vip_keyboard(translator)
         await msg.answer(translator['only_vip_warning'], reply_markup=keyboard)
         return

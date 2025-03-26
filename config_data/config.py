@@ -14,6 +14,11 @@ class tg_bot:
 
 
 @dataclass
+class OpenAi:
+    token: str
+
+
+@dataclass
 class DB:
     dns: str
 
@@ -22,6 +27,7 @@ class DB:
 class Config:
     bot: tg_bot
     db: DB
+    ai: OpenAi
 
 
 def load_config(path: str | None = None) -> Config:
@@ -35,5 +41,8 @@ def load_config(path: str | None = None) -> Config:
             ),
         db=DB(
             dns=env('dns')
+        ),
+        ai=OpenAi(
+            token=env('ai-token')
         )
     )

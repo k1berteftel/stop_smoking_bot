@@ -19,6 +19,7 @@ class UsersTable(Base):
     user_id: Mapped[int] = mapped_column(BigInteger, unique=True)
     locale: Mapped[str] = mapped_column(VARCHAR, nullable=True)
     sub: Mapped[bool] = mapped_column(Boolean, default=False)
+    trial_sub: Mapped[datetime] = mapped_column(DateTime, default=None, nullable=True)
     join: Mapped[str] = mapped_column(VARCHAR, nullable=True, default=None)  # Диплинк по которому юзер первый раз зашел в бота
     referral: Mapped[int] = mapped_column(BigInteger, nullable=True, default=None)
     sub_referral: Mapped[int] = mapped_column(BigInteger, nullable=True, default=None)

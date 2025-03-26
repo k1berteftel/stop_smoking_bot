@@ -26,7 +26,7 @@ admin_dialog = Dialog(
         state=adminSG.start
     ),
     Window(
-        Const('Введите User Id пользователя, состояние которого надо поменять'),
+        Const('Введите User Id или Username пользователя , состояние которого надо поменять'),
         TextInput(
             id='get_user_id',
             on_success=getters.get_user_id
@@ -151,7 +151,7 @@ admin_dialog = Dialog(
         state=adminSG.get_voucher
     ),
     Window(
-        Const('Введите кол-во генераций которые получит юзер при вводе кода ваучера'),
+        Const('Введите кол-во месяцев которое получит пользователь при вводе кода ваучера'),
         TextInput(
             id='get_voucher_amount',
             on_success=getters.get_voucher_amount

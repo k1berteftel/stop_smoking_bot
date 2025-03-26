@@ -7,8 +7,10 @@ class startSG(StatesGroup):
     start = State()
     sub_menu = State()
     rub_payment_menu = State()
+    get_voucher = State()
     ref_menu = State()
     get_derive_amount = State()
+    get_derive_card = State()
     info = State()
 
 
