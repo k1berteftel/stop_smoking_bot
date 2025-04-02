@@ -14,7 +14,7 @@ user_dialog = Dialog(
         Format('{text}'),
         Column(
             SwitchTo(Format('{sub}'), id='sub_menu_switcher', state=startSG.sub_menu),
-            Button(Format('{ref}'), id='ref_menu_switcher', on_click=getters.ref_menu_switcher),
+            SwitchTo(Format('{ref}'), id='ref_menu_switcher', state=startSG.ref_menu),
             SwitchTo(Format('{info}'), id='info_switcher', state=startSG.info),
             Button(Format('{close}'), id='close_dialog', on_click=getters.close_dialog),
             Start(Const('Админ панель'), id='admin', state=adminSG.start, when='admin')
@@ -56,8 +56,8 @@ user_dialog = Dialog(
     Window(
         Format('{text}'),
         Column(
-            Url(Format('{share}'), url=Format('http://t.me/share/url?url=https://t.me/AiStopSmoking_bot?start={user_id}')),
-            SwitchTo(Format('{derive}'), id='derive_switcher', state=startSG.get_derive_amount),
+            Url(Format('{share}'), url=Format('http://t.me/share/url?url=https://t.me/AiStopSmoking_bot?start={user_id}'), when='sub'),
+            SwitchTo(Format('{derive}'), id='derive_switcher', state=startSG.get_derive_amount, when='sub'),
         ),
         SwitchTo(Format('{back}'), id='back', state=startSG.start),
         getter=getters.ref_menu_getter,

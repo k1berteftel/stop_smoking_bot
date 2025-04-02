@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import json
 import httpx
 
-from prompts.funcs import get_current_prompt
+from prompts.funcs import get_current_prompt, abstract_prompt
 
 
 config: Config = load_config()
@@ -172,59 +172,13 @@ async def assistant_messages_abstract(thread_id: str):
     except NotFoundError:
         ...
 
-    messages = await get_messages_abstract(messages)
+    message = await get_messages_abstract(messages)
 
-    for message in messages:
-        await client.beta.threads.messages.create(
-            thread_id=thread_id,
-            role=message.role,
-            content=message.content
-        )
-
-
-async def _get_chat_history(thread_id: str):
-    thread_messages = client.beta.threads.messages.list(thread_id)
-
-    print(thread_messages)
-    messages = []
-    try:
-        async for msg in thread_messages:
-            try:
-                messages.append(msg.model_dump())
-            except Exception as err:
-                print(err)
-                continue
-    except NotFoundError:
-        ...
-    datas = messages
-    user_messages = []
-    assistant_messages = []
-    for data in datas:
-        if data['role'] == 'user':
-            user_messages.append(
-                {
-                    "role": "user",
-                    "content": data["content"][0]['text']['value'],
-                },
-            )
-        else:
-            try:
-                assistant_messages.append(
-                    {
-                        "role": "user",
-                        "content": json.loads(data["content"][0]['text']['value'])['answer'],
-                    },
-                )
-            except Exception:
-                assistant_messages.append(
-                    {
-                        "role": "user",
-                        "content": data["content"][0]['text']['value'],
-                    },
-                )
-    messages = await get_messages_abstract(messages)
-    for message in messages:
-        print(f'{{"role": {message.role}, {message.content}}}')
+    await client.beta.threads.messages.create(
+        thread_id=thread_id,
+        role=message.role,
+        content=message.content
+    )
 
 
 async def clear_chat_history(thread_id: str):
@@ -266,82 +220,39 @@ async def set_chat_history(thread_id: str):
         )
 
 
-async def get_messages_abstract(datas: list[dict]) -> list[SystemMessage]:
-    user_messages = []
-    assistant_messages = []
+async def get_messages_abstract(datas: list[dict]) -> SystemMessage:
+    dialog_messages = []
     for data in datas:
-        if data['role'] == 'user':
-            user_messages.append(
-                {
-                    "role": "user",
-                    "content": data["content"][0]['text']['value'],
-                },
-            )
-        else:
-            try:
-                assistant_messages.append(
+        try:
+            dialog_messages.append(
                     {
                         "role": "user",
                         "content": json.loads(data["content"][0]['text']['value'])['answer'],
                     },
                 )
-            except Exception:
-                assistant_messages.append(
-                    {
-                        "role": "user",
-                        "content": data["content"][0]['text']['value'],
-                    },
-                )
-    user_messages.append(
+        except Exception:
+            dialog_messages.append(
+                        {
+                            "role": "user",
+                            "content": data["content"][0]['text']['value'],
+                        },
+                    )
+    dialog_messages.append(
         {
             "role": "user",
-            "content": """Сократи диалог до основных тезисов и выводов,сохранив всю важную информацию. Убедись, что в конспекте отражены ключевые моменты, решения, договоренности, результаты тестов и опросов.  Используй нейтральный тон и структурированный формат.
-Идентифицируй ключевые моменты диалога исходя из твоей миссии помочь пользователю бросить курить. 
-Исключи повторы и детали, которые не влияют на твои решения относительно помощи пользователю с борьбой с зависимостью.
-Раздели конспект на логические блоки.
-Убедись что все важные моменты сохранены в конспекте диалога.  
-            """,
-        },
-    )
-    assistant_messages.append(
-        {
-            "role": "user",
-            "content": """Сократи диалог до основных тезисов и выводов,сохранив всю важную информацию. Убедись, что в конспекте отражены ключевые моменты, решения, договоренности, результаты тестов и опросов.  Используй нейтральный тон и структурированный формат.
-Идентифицируй ключевые моменты диалога исходя из твоей миссии помочь пользователю бросить курить. 
-Исключи повторы и детали, которые не влияют на твои решения относительно помощи пользователю с борьбой с зависимостью.
-Раздели конспект на логические блоки.
-Убедись что все важные моменты сохранены в конспекте диалога.  
-            """,
+            "content": abstract_prompt,
         },
     )
     completion = await client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=user_messages
+        messages=dialog_messages
     )
-    user_abstract = completion.choices[0].message.content
-    print(user_abstract)
-    completion = await client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=assistant_messages
-    )
-    assistant_abstract = completion.choices[0].message.content
-    print(assistant_abstract)
+    dialog_abstract = completion.choices[0].message.content
 
-    messages = []
-
-    messages.append(
-        SystemMessage(
+    return SystemMessage(
             role='user',
-            content=user_abstract
+            content=dialog_abstract
         )
-    )
-    messages.append(
-        SystemMessage(
-            role='assistant',
-            content=assistant_abstract
-        )
-    )
-    return messages
 
 
 async def delete_assistant_and_thread(assistant_id: str, thread_id: str):
@@ -351,4 +262,21 @@ async def delete_assistant_and_thread(assistant_id: str, thread_id: str):
     await client.beta.assistants.delete(assistant_id)
     await client.beta.threads.delete(thread_id)
 
+
+async def _get_chat_history(thread_id):
+    thread_messages = client.beta.threads.messages.list(thread_id)
+    messages = []
+    try:
+        async for msg in thread_messages:
+            try:
+                messages.append(msg.model_dump())
+            except Exception as err:
+                print(err)
+                continue
+    except NotFoundError:
+        ...
+
+    for message in messages:
+        print(message['role'])
+        print(message['content'][0]['text']['value'])
 

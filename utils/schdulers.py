@@ -37,15 +37,17 @@ async def check_payment(payment_id: any, user_id: int, bot: Bot, scheduler: Asyn
     if payment.paid:
         amount = kwargs.get('amount')
         user = await session.get_user(user_id)
+        if user.trial_sub:
+            await session.set_trial_sub(user_id, None)
         await session.update_user_sub(user_id)
-        prizes = await session.get_prices()
+        prices = await session.get_prices()
         if user.referral:
             referral = await session.get_user(user.referral)
-            rub = int(round(amount * prizes.ref_prize / 100))
+            rub = int(round(amount * prices.ref_price / 100))
             await session.update_user_balance(referral.user_id, rub, 'rub')
         if user.sub_referral:
             sub_referral = await session.get_user(user.sub_referral)
-            rub = int(round(amount * prizes.sub_ref_prize / 100))
+            rub = int(round(amount * prices.sub_ref_price / 100))
             await session.update_user_balance(sub_referral.user_id, rub, 'rub')
         await bot.send_message(chat_id=user_id, text=translator['success_payment'])
         scheduler.remove_job(job_id=f'payment_{user_id}')

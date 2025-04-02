@@ -1,4 +1,5 @@
 import datetime
+from dateutil.relativedelta import relativedelta
 
 from database.action_data_class import DataInteraction
 
@@ -10,7 +11,7 @@ async def get_touch_date(user_id: int, session: DataInteraction) -> datetime.dat
     user_ai = await session.get_user_ai(user_id)
     if user_ai.status == 1:
         if (datetime.datetime.today() + datetime.timedelta(hours=3)).hour not in time_range:
-            date = datetime.datetime.today() + datetime.timedelta(minutes=5)
+            date = datetime.datetime.today() + datetime.timedelta(hours=3)
         else:
             date = await _get_current_differ(3)
     elif user_ai.status == 2:
@@ -40,7 +41,7 @@ async def get_touch_date(user_id: int, session: DataInteraction) -> datetime.dat
                 for i in range(1, 14):
                     date = datetime.datetime.today().replace(hour=datetime.datetime.today().hour + i)
                     if date.hour not in time_range:
-                        date = date.replace(day=date.day + 3)
+                        date = date + datetime.timedelta(days=3)
                         break
 
     return date
@@ -52,7 +53,7 @@ async def _get_current_differ(hours: int) -> datetime.datetime:
         return today + datetime.timedelta(hours=hours)
     else:
         if today.replace(hour=8).timestamp() < today.timestamp():
-            return today.replace(hour=8, day=today.day + 1)
+            return today.replace(hour=8) + datetime.timedelta(days=1)
         else:
             return today.replace(hour=8)
 
@@ -63,9 +64,9 @@ async def _get_current_dates() -> list[datetime.datetime]:
     morning_date = datetime.datetime(year=today.year, hour=8, minute=today.minute, day=today.day, month=today.month)
     evening_date = datetime.datetime(year=today.year, hour=19, minute=today.minute, day=today.day, month=today.month)
     if morning_date.timestamp() < today.timestamp():
-        morning_date = morning_date.replace(day=today.day + 1)
+        morning_date = morning_date + datetime.timedelta(days=1)
     if evening_date.timestamp() < today.timestamp():
-        evening_date = evening_date.replace(day=today.day + 1)
+        evening_date = evening_date + datetime.timedelta(days=1)
     dates.append(morning_date)
     dates.append(evening_date)
     return dates

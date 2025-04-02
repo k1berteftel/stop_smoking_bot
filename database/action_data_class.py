@@ -28,7 +28,7 @@ class DataInteraction():
     async def check_voucher(self, user_id: int, voucher: str) -> bool:
         async with self._sessions() as session:
             result = await session.scalar(select(VouchersTable).where(VouchersTable.code == voucher))
-            print(result)
+            print('result 1:', result)
             if not result:
                 return False
             result = await session.scalar(select(UserVouchersTable).where(
@@ -37,6 +37,7 @@ class DataInteraction():
                     UserVouchersTable.code == voucher
                 )
             ))
+            print('result 2:', result)
             if result:
                 return False
             await session.execute(insert(UserVouchersTable).values(
@@ -226,18 +227,18 @@ class DataInteraction():
         user = await self.get_user(user_id)
         async with self._sessions() as session:
             if months is None:
-                await session.execute(update(UsersTable).where(UsersTable.user_id == user).values(
+                await session.execute(update(UsersTable).where(UsersTable.user_id == user_id).values(
                     trial_sub=None,
-                    sub=None
+                    sub=False
                 ))
                 await session.commit()
                 return
             if user.trial_sub:
-                await session.execute(update(UsersTable).where(UsersTable.user_id == user).values(
+                await session.execute(update(UsersTable).where(UsersTable.user_id == user_id).values(
                     trial_sub=UsersTable.trial_sub + relativedelta(months=months)
                 ))
             else:
-                await session.execute(update(UsersTable).where(UsersTable.user_id == user).values(
+                await session.execute(update(UsersTable).where(UsersTable.user_id == user_id).values(
                     trial_sub=datetime.datetime.today() + relativedelta(months=months),
                     sub=True
                 ))

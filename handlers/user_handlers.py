@@ -2,7 +2,7 @@ import datetime
 
 from aiogram import Router, F, Bot
 from aiogram.filters import CommandStart, CommandObject, Command
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, ReplyKeyboardMarkup, KeyboardButton
 from aiogram_dialog import DialogManager, StartMode
 from aiogram.fsm.context import FSMContext
 
@@ -24,6 +24,8 @@ async def start_dialog(msg: Message, dialog_manager: DialogManager, session: Dat
     #user_ai = await session.get_user_ai(6123610291)
     #await _get_chat_history(user_ai.thread_id)
     #  ___
+    #keyboard = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='Меню')]], resize_keyboard=True)
+    #await msg.answer('текст сообщения', reply_markup=keyboard)
     deeplink = None
     referral = None
     sub_referral = None
@@ -119,7 +121,7 @@ async def answer_message(msg: Message, dialog_manager: DialogManager, state: FSM
         await state.update_data(assistant_id=assistant_id, thread_id=thread_id)
     if user_ai.status != 1 and not user.sub:
         keyboard = await get_only_vip_keyboard(translator)
-        await msg.answer(translator['only_vip_warning'], reply_markup=keyboard)
+        await msg.answer(text=translator['only_vip_warning'], reply_markup=keyboard)
         return
     if user.sub and user.trial_sub and user.trial_sub.timestamp() < datetime.datetime.today().timestamp():
         await session.set_trial_sub(user_id=msg.from_user.id, months=None)

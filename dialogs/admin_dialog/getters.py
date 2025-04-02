@@ -246,7 +246,7 @@ async def voucher_menu_getter(dialog_manager: DialogManager, **kwargs):
     vouchers = await session.get_vouchers()
     text = ''
     for voucher in vouchers:
-        text += f'{voucher.code} - {voucher.amount} генераций - {voucher.inputs} вождений\n'
+        text += f'{voucher.code} - {voucher.amount} месяцев - {voucher.inputs} вождений\n'
     return {
         'codes': text
     }

@@ -70,27 +70,27 @@ async def get_voucher_getter(event_from_user: User, dialog_manager: DialogManage
     }
 
 
-async def ref_menu_switcher(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
-    session: DataInteraction = dialog_manager.middleware_data.get('session')
-    user = await session.get_user(clb.from_user.id)
-    if not user.sub:
-        translator: Translator = dialog_manager.middleware_data.get('translator')
-        await clb.answer(translator['no_sub_warning'])
-        return
-    await dialog_manager.switch_to(startSG.ref_menu)
-
-
 async def sub_menu_getter(event_from_user: User, dialog_manager: DialogManager, **kwargs):
     session: DataInteraction = dialog_manager.middleware_data.get('session')
+    translator: Translator = dialog_manager.middleware_data.get('translator')
     user = await session.get_user(event_from_user.id)
     texts = await session.get_texts()
     if user.locale == 'ru':
-        sub_text = texts.sub_ru
+        text = texts.sub_ru + '\n\n' + (translator['sub'].format(
+            sub=((translator['sub_widget'] + translator['sub_trial_widget'].format(
+                date=user.trial_sub.strftime('%d-%m-%Y'))
+            ) if user.trial_sub else translator['sub_widget'])
+            if user.sub else translator['no_sub_widget'])
+        )
     else:
-        sub_text = texts.sub_en
-    translator: Translator = dialog_manager.middleware_data.get('translator')
+        text = texts.sub_en + '\n\n' + (translator['sub'].format(
+            sub=((translator['sub_widget'] + translator['sub_trial_widget'].format(
+                date=user.trial_sub.strftime('%d-%m-%Y'))
+            ) if user.trial_sub else translator['sub_widget'])
+            if user.sub else translator['no_sub_widget'])
+        )
     return {
-        'text': sub_text,
+        'text': text,
         'rub': translator['rub_button'],
         'stars': translator['stars_button'],
         'ton': translator['ton_button'],
@@ -171,7 +171,7 @@ async def rub_payment_getter(event_from_user: User, dialog_manager: DialogManage
         check_payment,
         'interval',
         args=[payment.id, event_from_user.id, bot, scheduler, session, translator],
-        kwargs={'amount': dialog_manager.dialog_data.get('amount'), 'type': type},
+        kwargs={'amount': price, 'type': type},
         id=f'payment_{event_from_user.id}',
         seconds=5
     )
@@ -200,13 +200,20 @@ async def ref_menu_getter(event_from_user: User, dialog_manager: DialogManager, 
         ref_text = texts.ref_ru
     else:
         ref_text = texts.ref_en
+
+    if user.sub:
+        text = ref_text + translator['ref'].format(refs=user.refs, sub_refs=user.sub_refs, balance=user.balance.rub,
+                                         user_id=user.user_id)
+    else:
+        text = ref_text + translator['ref_no_sub']
     return {
         'text': ref_text + translator['ref'].format(refs=user.refs, sub_refs=user.sub_refs, balance=user.balance.rub,
                                          user_id=user.user_id),
         'derive': translator['derive_button'],
         'share': translator['share_button'],
         'user_id': user.user_id,
-        'back': translator['back']
+        'back': translator['back'],
+        'sub': user.sub
     }
 
 
