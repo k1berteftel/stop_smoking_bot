@@ -12,6 +12,7 @@ from utils.ai_funcs import get_assistant_and_thread, get_text_answer, get_answer
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from database.action_data_class import DataInteraction
 from utils.translator.translator import Translator
+from utils.translator import Translator as create_translator
 from states import state_groups as states
 
 
@@ -24,8 +25,8 @@ async def start_dialog(msg: Message, dialog_manager: DialogManager, session: Dat
     #user_ai = await session.get_user_ai(6123610291)
     #await _get_chat_history(user_ai.thread_id)
     #  ___
-    #keyboard = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='Меню')]], resize_keyboard=True)
-    #await msg.answer('текст сообщения', reply_markup=keyboard)
+    keyboard = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='Меню')]], resize_keyboard=True)
+    await msg.answer('текст сообщения', reply_markup=keyboard)
     deeplink = None
     referral = None
     sub_referral = None
@@ -68,7 +69,24 @@ async def start_dialog(msg: Message, dialog_manager: DialogManager, session: Dat
         await session.add_user(user_id=msg.from_user.id,
                                username=msg.from_user.username if msg.from_user.username else '-',
                                name=msg.from_user.full_name, referral=referral, sub_referral=sub_referral, join=deeplink)
-    await dialog_manager.start(states.languagesSG.start, mode=StartMode.RESET_STACK)
+    #await dialog_manager.start(states.languagesSG.start, mode=StartMode.RESET_STACK)
+    user = await session.get_user(msg.from_user.id)
+    await session.set_locale(msg.from_user.id, 'ru')
+    if not user.locale:
+        translator: Translator = create_translator('ru')
+        user_ai = await session.get_user_ai(msg.from_user.id)
+        if not user_ai.assistant_id or not user_ai.thread_id:
+            role = get_current_prompt(user_ai.status)
+            prices = await session.get_prices()
+            assistant_id, thread_id = await get_assistant_and_thread(role, prices.temperature)
+            await session.set_user_ai_data(msg.from_user.id, assistant_id=assistant_id, thread_id=thread_id)
+            answer = await get_text_answer(translator['start_ai'], assistant_id, thread_id)
+            await session.set_user_ai_data(msg.from_user.id, count=user_ai.count + 1)
+            if isinstance(answer, str):
+                print(answer)
+                await msg.answer(answer)
+                return
+            await msg.answer(answer.get('answer'))
 
 
 @user_router.message(Command('menu'))
