@@ -89,7 +89,7 @@ async def start_dialog(msg: Message, dialog_manager: DialogManager, session: Dat
             await msg.answer(answer.get('answer'))
 
 
-@user_router.message(Command('menu'))
+@user_router.message(F.text == 'Меню')
 async def start_user_dialog(msg: Message, dialog_manager: DialogManager):
     if dialog_manager.has_context():
         await dialog_manager.done()
