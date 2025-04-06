@@ -157,10 +157,18 @@ async def answer_message(msg: Message, dialog_manager: DialogManager, state: FSM
     if user_ai.count >= 20:
         await session.set_user_ai_data(msg.from_user.id, count=0)
         abstract = await assistant_messages_abstract(thread_id)
-        await msg.answer('<b>Получившийся конспект:</b> \n\n', abstract.content)
+        content = abstract.content
+        count = 0
+        for text in content:
+            count += 1
+            if count == 4090:
+                await msg.answer(abstract.content[0:4090:])
+                content = content[4090::]
+                count = 0
+        #await msg.answer('<b>Получившийся конспект:</b> \n\n', abstract.content)
     if answer is None:
         await message.delete()
-        await msg.answer('Что-то пошло не так, пожалуйста попробуйте снова')
+        await msg.answer('Что-то пошло не так, 🔤🔤🔤🔤пожалуйста попробуйте снова')
         return
     if isinstance(answer, str):
         await message.delete()
