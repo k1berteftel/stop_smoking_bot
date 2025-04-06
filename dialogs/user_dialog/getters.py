@@ -207,8 +207,7 @@ async def ref_menu_getter(event_from_user: User, dialog_manager: DialogManager, 
     else:
         text = ref_text + translator['ref_no_sub']
     return {
-        'text': ref_text + translator['ref'].format(refs=user.refs, sub_refs=user.sub_refs, balance=user.balance.rub,
-                                         user_id=user.user_id),
+        'text': ref_text + text,
         'derive': translator['derive_button'],
         'share': translator['share_button'],
         'user_id': user.user_id,

@@ -287,7 +287,6 @@ async def del_voucher(clb: CallbackQuery, widget: Select, dialog_manager: Dialog
     await clb.answer('Данный код ваучера был успешно удален')
 
 
-
 async def deeplink_menu_getter(dialog_manager: DialogManager, **kwargs):
     session: DataInteraction = dialog_manager.middleware_data.get('session')
     links: list[DeeplinksTable] = await session.get_deeplinks()
@@ -309,7 +308,12 @@ async def deeplink_menu_getter(dialog_manager: DialogManager, **kwargs):
                 subs += 1
         text += (f'({link.name})https://t.me/AiStopSmoking_bot?start={link.link}: {link.entry}\nЗашло: {len(users)}'
                  f', активных: {active}, зашло сегодня: {today}, приобрели подписку: {subs}, активны в последние 24 часа: {activity}\n')
-    return {'links': text}
+    count = len([user.user_id if not user.join else ... for user in await session.get_users()])
+    print(count)
+    return {
+        'links': text,
+        'joins': count
+    }
 
 
 async def get_deeplink_name(msg: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):

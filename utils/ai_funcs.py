@@ -179,6 +179,7 @@ async def assistant_messages_abstract(thread_id: str):
         role=message.role,
         content=message.content
     )
+    return message
 
 
 async def clear_chat_history(thread_id: str):

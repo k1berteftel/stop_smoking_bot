@@ -177,7 +177,7 @@ admin_dialog = Dialog(
     ),
     Window(
         Format('🔗 *Меню управления диплинками*\n\n'
-               '🎯 *Имеющиеся диплинки*:\n{links}'),
+               '🎯 *Имеющиеся диплинки*:\n{links}\nПереходов без диплинков: {joins}'),
         Column(
             SwitchTo(Const('➕ Добавить диплинк'), id='add_deeplink', state=adminSG.get_deeplink_name),
             SwitchTo(Const('❌ Удалить диплинки'), id='del_deeplinks', state=adminSG.deeplink_del),
