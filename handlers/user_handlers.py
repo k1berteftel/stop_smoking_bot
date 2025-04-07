@@ -22,8 +22,8 @@ user_router = Router()
 @user_router.message(CommandStart())
 async def start_dialog(msg: Message, dialog_manager: DialogManager, session: DataInteraction, command: CommandObject, scheduler: AsyncIOScheduler):
     #  ___
-    #user_ai = await session.get_user_ai(6123610291)
-    #await _get_chat_history(user_ai.thread_id)
+    #user_ai = await session.get_user_ai(1236300146)
+    #print(await _get_chat_history(user_ai.thread_id))
     #  ___
     keyboard = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='Меню')]], resize_keyboard=True)
     await msg.answer('текст сообщения', reply_markup=keyboard)
@@ -154,18 +154,18 @@ async def answer_message(msg: Message, dialog_manager: DialogManager, state: FSM
     answer = await get_text_answer(msg.text, assistant_id, thread_id)
     await session.set_user_ai_data(msg.from_user.id, count=user_ai.count + 1)
     print('user data: ', user_ai.count)
-    if user_ai.count >= 20:
+    if user_ai.count >= 10:
         await session.set_user_ai_data(msg.from_user.id, count=0)
-        abstract = await assistant_messages_abstract(thread_id)
-        content = abstract.content
-        count = 0
-        for text in content:
-            count += 1
-            if count == 4090:
-                await msg.answer(abstract.content[0:4090:])
-                content = content[4090::]
-                count = 0
-        #await msg.answer('<b>Получившийся конспект:</b> \n\n', abstract.content)
+        try:
+            abstract = await assistant_messages_abstract(thread_id)
+        except Exception as err:
+            print(err)
+        else:
+            content = abstract.content.strip()
+            try:
+                await msg.answer('<b>Получившийся конспект:</b> \n\n', content)
+            except Exception as error:
+                print(error)
     if answer is None:
         await message.delete()
         await msg.answer('Что-то пошло не так, 🔤🔤🔤🔤пожалуйста попробуйте снова')
