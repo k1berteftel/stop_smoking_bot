@@ -1,13 +1,15 @@
 import datetime
 from aiogram import Bot
 from aiogram.types import CallbackQuery, User, Message, InlineKeyboardMarkup, InlineKeyboardButton, ContentType
+from aiogram.fsm.context import FSMContext
 from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.api.entities import MediaAttachment
 from aiogram_dialog.widgets.kbd import Button, Select
 from aiogram_dialog.widgets.input import ManagedTextInput, MessageInput
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from utils.ai_funcs import clear_chat_history as rm_history, set_chat_history
+from utils.ai_funcs import clear_chat_history as rm_history, set_chat_history, transfer_context
+from prompts.funcs import get_current_prompt
 from utils.schdulers import send_messages
 from utils.build_ids import get_random_id
 from database.action_data_class import DataInteraction
@@ -28,9 +30,15 @@ async def set_user_status(clb: CallbackQuery, widget: Button, dialog_manager: Di
     session: DataInteraction = dialog_manager.middleware_data.get('session')
     user_id = dialog_manager.dialog_data.get('user_id')
     user_ai = await session.get_user_ai(user_id)
+    prompt = get_current_prompt(2)
+    prices = await session.get_prices()
+    assistant_id = await transfer_context(user_ai.assistant_id, user_ai.thread_id, prompt, prices.temperature)
     await set_chat_history(user_ai.thread_id)
-    await session.set_user_ai_data(clb.from_user.id, status=2)
-    await clb.answer('Пользователю был установлен новый статус')
+    await session.set_user_ai_data(user_id, status=2, assistant_id=assistant_id)
+    try:
+        await clb.answer('Пользователю был установлен новый статус')
+    except Exception:
+        ...
     await dialog_manager.switch_to(adminSG.user_condition_menu)
 
 
@@ -38,10 +46,14 @@ async def clear_chat_history(clb: CallbackQuery, widget: Button, dialog_manager:
     session: DataInteraction = dialog_manager.middleware_data.get('session')
     user_id = dialog_manager.dialog_data.get('user_id')
     user_ai = await session.get_user_ai(user_id)
-    await rm_history(thread_id=user_ai.thread_id)
-    await session.set_user_ai_data(user_id, status=1)
+    state: FSMContext = dialog_manager.middleware_data.get('state')
+    print(state)
+    #await rm_history(thread_id=user_ai.thread_id)
+    #await session.set_user_ai_data(user_id, status=1)
+    await session.del_user(clb.from_user.id)
     await clb.answer('История сообщений была успешно почищена')
-    await dialog_manager.switch_to(adminSG.user_condition_menu)
+    dialog_manager.dialog_data.clear()
+    await dialog_manager.switch_to(adminSG.start)
 
 
 async def user_condition_menu_getter(dialog_manager: DialogManager, **kwargs):
@@ -76,6 +88,23 @@ async def get_user_id(msg: Message, widget: ManagedTextInput, dialog_manager: Di
     await dialog_manager.switch_to(adminSG.user_condition_menu)
 
 
+async def get_counter(msg: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
+    try:
+        counter = int(text)
+    except Exception:
+        await msg.answer('Значение должно быть числом, пожалуйста попробуйте снова')
+        return
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    await session.set_prices(count=counter)
+    await dialog_manager.switch_to(adminSG.get_counter)
+
+
+async def get_counter_getter(dialog_manager: DialogManager, **kwargs):
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    prices = await session.get_prices()
+    return {'counter': prices.count}
+
+
 async def get_static(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
     session: DataInteraction = dialog_manager.middleware_data.get('session')
     users = await session.get_users()
@@ -93,6 +122,20 @@ async def get_static(clb: CallbackQuery, widget: Button, dialog_manager: DialogM
         3: 0,
         4: 0
     }
+    transitions = {
+        'basic': {
+            'users': 0,
+            'subs': 0
+        },
+        'ref': {
+            'users': 0,
+            'subs': 0
+        },
+        'deeplink': {
+            'users': 0,
+            'subs': 0
+        }
+    }
     for user in users:
         if user.active:
             active += 1
@@ -109,6 +152,18 @@ async def get_static(clb: CallbackQuery, widget: Button, dialog_manager: DialogM
             activity += 1
         if user.sub:
             subs += 1
+        if not user.join and not user.referral:
+            transitions['basic']['users'] += 1
+            if user.sub:
+                transitions['basic']['subs'] += 1
+        if user.referral:
+            transitions['ref']['users'] += 1
+            if user.sub:
+                transitions['ref']['subs'] += 1
+        if user.join:
+            transitions['deeplink']['users'] += 1
+            if user.sub:
+                transitions['deeplink']['sub'] += 1
         statuses[user.AI.status] = statuses.get(user.AI.status) + 1
 
     text = (
@@ -119,6 +174,9 @@ async def get_static(clb: CallbackQuery, widget: Button, dialog_manager: DialogM
         f'<b>Прирост аудитории:</b>\n - За сегодня: +{entry.get("today")}\n - Вчера: +{entry.get("yesterday")}'
         f'\n - Позавчера: + {entry.get("2_day_ago")}\n\n<b>Прогресс лечения:</b>\n - Новых: {statuses.get(1)}\n'
         f' - В работе(готов): {statuses.get(2)}\n - Бросило: {statuses.get(3)}\n - Срывов: {statuses.get(4)}'
+        f'\n\n<b>Статистика по переходам:</b>\nОбычные переходы: {transitions["basic"]["users"]}/{transitions["basic"]["subs"]}'
+        f'\nРеферальные переходы: {transitions["ref"]["users"]}/{transitions["ref"]["subs"]}\nПереходы по диплинкам: '
+        f'{transitions["deeplink"]["users"]}/{transitions["deeplink"]["subs"]}'
     )
     await clb.message.answer(text)
 
@@ -183,11 +241,12 @@ async def get_temperature(msg: Message, widget: ManagedTextInput, dialog_manager
 async def get_prompt_file(msg: Message, widget: MessageInput, dialog_manager: DialogManager):
     bot: Bot = dialog_manager.middleware_data.get('bot')
     prompt = dialog_manager.dialog_data.get('prompt')
+    file = await bot.get_file(msg.document.file_id)
     if prompt == 'new':
-        file = await bot.get_file(msg.document.file_id)
         await bot.download_file(file.file_path, 'prompts/Новый.txt')
+    elif prompt == 'abstract':
+        await bot.download_file(file.file_path, 'prompts/Конспект.txt')
     else:
-        file = await bot.get_file(msg.document.file_id)
         await bot.download_file(file.file_path, 'prompts/Другое.txt')
     await msg.answer('Промпт был успешно обновлен')
     dialog_manager.dialog_data.clear()
@@ -198,6 +257,8 @@ async def choosen_prompt_menu_getter(dialog_manager: DialogManager, **kwargs):
     prompt = dialog_manager.dialog_data.get('prompt')
     if prompt == 'new':
         media = MediaAttachment(type=ContentType.DOCUMENT, path='prompts/Новый.txt')
+    elif prompt == 'abstract':
+        media = MediaAttachment(type=ContentType.DOCUMENT, path='prompts/Конспект.txt')
     else:
         media = MediaAttachment(type=ContentType.DOCUMENT, path='prompts/Другое.txt')
     return {'media': media}
@@ -439,6 +500,7 @@ async def start_malling(clb: CallbackQuery, widget: Button, dialog_manager: Dial
         await clb.answer('Рассылка прошла успешно')
     else:
         date = datetime.datetime.strptime(time, '%H:%M %d.%m')
+        date = date.replace(year=datetime.datetime.today().year)
         scheduler.add_job(
             func=send_messages,
             args=[bot, session, InlineKeyboardMarkup(inline_keyboard=[keyboard]) if keyboard else None, message],

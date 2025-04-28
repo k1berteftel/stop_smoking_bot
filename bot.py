@@ -2,6 +2,8 @@ import asyncio
 import logging
 import os
 import inspect
+import datetime
+import pytz
 
 from aiogram import Bot, Dispatcher
 from aiogram_dialog import setup_dialogs
@@ -15,8 +17,13 @@ from database.model import Base
 from config_data.config import load_config, Config
 from handlers.payment_handlers import payment_router
 from handlers.user_handlers import user_router
+from handlers.admin_handlers import admin_router
 from dialogs import get_dialogs
 from middlewares import TransferObjectsMiddleware, RemindMiddleware
+
+
+timezone = pytz.timezone('Europe/Moscow')
+datetime.datetime.now(timezone)
 
 
 module_path = inspect.getfile(inspect.currentframe())
@@ -46,13 +53,14 @@ async def main():
     #await configurate_tables(session)
 
     scheduler: AsyncIOScheduler = AsyncIOScheduler()
+    scheduler.timezone = timezone
     scheduler.start()
 
     bot = Bot(token=config.bot.token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher()
 
     # подключаем роутеры
-    dp.include_routers(*get_dialogs(), user_router, payment_router)
+    dp.include_routers(*get_dialogs(), user_router, admin_router, payment_router)
 
     # подключаем middleware
     dp.update.middleware(TransferObjectsMiddleware())

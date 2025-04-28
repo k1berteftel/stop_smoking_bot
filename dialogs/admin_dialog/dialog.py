@@ -16,6 +16,7 @@ admin_dialog = Dialog(
         SwitchTo(Const('Управление состояниями'), id='condition_menu_switcher', state=adminSG.condition_menu),
         SwitchTo(Const('Управление текстами'), id='texts_menu_switcher', state=adminSG.texts_menu),
         SwitchTo(Const('Управление температурой'), id='temperature_menu_switcher', state=adminSG.temperature_menu),
+        SwitchTo(Const('Управление счетчиком до конспекта'), id='get_counter_switcher', state=adminSG.get_counter),
         SwitchTo(Const('Управление промптами'), id='prompts_menu_switcher', state=adminSG.prompts_menu),
         SwitchTo(Const('Управление кодами ваучера'), id='vouchers_menu', state=adminSG.vouchers_menu),
         SwitchTo(Const('🔗 Управление диплинками'), id='deeplinks_menu_switcher', state=adminSG.deeplink_menu),
@@ -24,6 +25,16 @@ admin_dialog = Dialog(
         SwitchTo(Const('Сделать рассылку'), id='get_mail_switcher', state=adminSG.get_mail),
         Cancel(Const('Назад'), id='close_admin'),
         state=adminSG.start
+    ),
+    Window(
+        Format('Действующее число сообщений до конспекта: {counter}, чтобы поменять его отправьте новое число'),
+        TextInput(
+            id='get_counter',
+            on_success=getters.get_counter,
+        ),
+        SwitchTo(Const('🔙 Назад'), id='back', state=adminSG.start),
+        getter=getters.get_counter_getter,
+        state=adminSG.get_counter
     ),
     Window(
         Const('Введите User Id или Username пользователя , состояние которого надо поменять'),
@@ -94,6 +105,7 @@ admin_dialog = Dialog(
         Column(
             Button(Const('"Новый"'), id='new_prompt_choose', on_click=getters.prompt_choose),
             Button(Const('"Готов и другое"'), id='ready_prompt_choose', on_click=getters.prompt_choose),
+            Button(Const('Промпт конспекта'), id='abstract_prompt_choose', on_click=getters.prompt_choose),
         ),
         SwitchTo(Const('🔙 Назад'), id='back', state=adminSG.start),
         state=adminSG.prompts_menu

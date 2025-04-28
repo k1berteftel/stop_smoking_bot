@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from database.model import (UsersTable, DeeplinksTable, AdminsTable, OneTimeLinksIdsTable,
                             VouchersTable, UserVouchersTable, BalanceTable, PricesTable, UserAI,
-                            TextsTable)
+                            TextsTable, ApplicationsTable)
 from dateutil.relativedelta import relativedelta
 
 
@@ -49,6 +49,17 @@ class DataInteraction():
             ))
             await session.commit()
             return True
+
+    async def add_application(self, user_id: int, amount: int) -> bool:
+        if await self.get_application(user_id):
+            return False
+        async with self._sessions() as session:
+            await session.execute(insert(ApplicationsTable).values(
+                user_id=user_id,
+                amount=amount
+            ))
+            await session.commit()
+        return True
 
     async def add_refs(self, user_id: int):
         async with self._sessions() as session:
@@ -131,6 +142,11 @@ class DataInteraction():
             ))
             await session.commit()
 
+    async def get_application(self, user_id: int):
+        async with self._sessions() as session:
+            result = await session.scalar(select(ApplicationsTable).where(ApplicationsTable.user_id == user_id))
+        return result
+
     async def get_user_ai(self, user_id: int):
         async with self._sessions() as session:
             result = await session.scalar(select(UserAI).where(UserAI.user_id == user_id))
@@ -173,6 +189,11 @@ class DataInteraction():
     async def get_users(self):
         async with self._sessions() as session:
             result = await session.scalars(select(UsersTable))
+        return result.fetchall()
+
+    async def get_user_refs(self, user_id: int):
+        async with self._sessions() as session:
+            result = await session.scalars(select(UsersTable).where(UsersTable.referral == user_id))
         return result.fetchall()
 
     async def get_links(self):
@@ -223,23 +244,23 @@ class DataInteraction():
                 ))
             await session.commit()
 
-    async def set_trial_sub(self, user_id: int, months: int | None):
+    async def set_sub_end(self, user_id: int, months: int | None):
         user = await self.get_user(user_id)
         async with self._sessions() as session:
             if months is None:
                 await session.execute(update(UsersTable).where(UsersTable.user_id == user_id).values(
-                    trial_sub=None,
+                    sub_end=None,
                     sub=False
                 ))
                 await session.commit()
                 return
-            if user.trial_sub:
+            if user.sub_end:
                 await session.execute(update(UsersTable).where(UsersTable.user_id == user_id).values(
-                    trial_sub=UsersTable.trial_sub + relativedelta(months=months)
+                    sub_end=UsersTable.sub_end + relativedelta(months=months)
                 ))
             else:
                 await session.execute(update(UsersTable).where(UsersTable.user_id == user_id).values(
-                    trial_sub=datetime.datetime.today() + relativedelta(months=months),
+                    sub_end=datetime.datetime.today() + relativedelta(months=months),
                     sub=True
                 ))
             await session.commit()
@@ -286,6 +307,13 @@ class DataInteraction():
             ))
             await session.commit()
 
+    async def set_paid_referral(self, user_id: int):
+        async with self._sessions() as session:
+            await session.execute(update(UsersTable).where(UsersTable.user_id == user_id).values(
+                paid_referral=True
+            ))
+            await session.commit()
+
     async def del_deeplink(self, link: str):
         async with self._sessions() as session:
             await session.execute(delete(DeeplinksTable).where(DeeplinksTable.link == link))
@@ -304,4 +332,14 @@ class DataInteraction():
     async def del_voucher(self, id: int):
         async with self._sessions() as session:
             await session.execute(delete(VouchersTable).where(VouchersTable.id == id))
+            await session.commit()
+
+    async def del_user(self, user_id: int):
+        async with self._sessions() as session:
+            await session.execute(delete(UsersTable).where(UsersTable.user_id == user_id))
+            await session.commit()
+
+    async def del_application(self, user_id: int):
+        async with self._sessions() as session:
+            await session.execute(delete(ApplicationsTable).where(ApplicationsTable.user_id == user_id))
             await session.commit()

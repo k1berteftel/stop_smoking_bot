@@ -8,7 +8,7 @@ from aiogram.fsm.context import FSMContext
 
 from prompts.funcs import get_current_prompt
 from keyboards.keyboard import get_only_vip_keyboard
-from utils.ai_funcs import get_assistant_and_thread, get_text_answer, get_answer_by_prompt, transfer_context, assistant_messages_abstract, _get_chat_history
+from utils.ai_funcs import get_assistant_and_thread, get_text_answer, get_answer_by_prompt, transfer_context, assistant_messages_abstract, _get_chat_history, clear_chat_history
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from database.action_data_class import DataInteraction
 from utils.translator.translator import Translator
@@ -22,11 +22,13 @@ user_router = Router()
 @user_router.message(CommandStart())
 async def start_dialog(msg: Message, dialog_manager: DialogManager, session: DataInteraction, command: CommandObject, scheduler: AsyncIOScheduler):
     #  ___
-    #user_ai = await session.get_user_ai(1236300146)
-    #print(await _get_chat_history(user_ai.thread_id))
+    user_ai = await session.get_user_ai(1236300146)
+    #await clear_chat_history(user_ai.thread_id)
+    print(await _get_chat_history(user_ai.thread_id))
     #  ___
-    keyboard = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='Меню')]], resize_keyboard=True)
-    await msg.answer('текст сообщения', reply_markup=keyboard)
+    keyboard = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='📍Меню')]], resize_keyboard=True)
+    #text = 'Привет! Готов начать путь к здоровой жизни? Мы поможем тебе отказаться от курения. Давай вместе сделаем первый шаг!'
+    #await msg.answer(text, reply_markup=keyboard)
     deeplink = None
     referral = None
     sub_referral = None
@@ -74,6 +76,11 @@ async def start_dialog(msg: Message, dialog_manager: DialogManager, session: Dat
     await session.set_locale(msg.from_user.id, 'ru')
     if not user.locale:
         translator: Translator = create_translator('ru')
+        message = await msg.answer(translator['writing_action'])
+        await msg.bot.send_chat_action(
+            chat_id=msg.from_user.id,
+            action='typing'
+        )
         user_ai = await session.get_user_ai(msg.from_user.id)
         if not user_ai.assistant_id or not user_ai.thread_id:
             role = get_current_prompt(user_ai.status)
@@ -84,12 +91,14 @@ async def start_dialog(msg: Message, dialog_manager: DialogManager, session: Dat
             await session.set_user_ai_data(msg.from_user.id, count=user_ai.count + 1)
             if isinstance(answer, str):
                 print(answer)
-                await msg.answer(answer)
+                await msg.answer(answer, reply_markup=keyboard)
+                await message.delete()
                 return
-            await msg.answer(answer.get('answer'))
+            await msg.answer(answer.get('answer'), reply_markup=keyboard)
+            await message.delete()
 
 
-@user_router.message(F.text == 'Меню')
+@user_router.message(F.text == '📍Меню')
 async def start_user_dialog(msg: Message, dialog_manager: DialogManager):
     if dialog_manager.has_context():
         await dialog_manager.done()
@@ -128,12 +137,12 @@ async def answer_message(msg: Message, dialog_manager: DialogManager, state: FSM
     user = await session.get_user(msg.from_user.id)
     user_ai = await session.get_user_ai(msg.from_user.id)
     data = await state.get_data()
-    assistant_id, thread_id = data.get('assistant_id'), data.get('thread_id')
+    prices = await session.get_prices()
+    assistant_id, thread_id = user_ai.assistant_id, user_ai.thread_id#data.get('assistant_id'), data.get('thread_id')
     if not assistant_id or not thread_id:
         assistant_id, thread_id = user_ai.assistant_id, user_ai.thread_id
         if not assistant_id or not thread_id:
             role = get_current_prompt(user_ai.status)
-            prices = await session.get_prices()
             assistant_id, thread_id = await get_assistant_and_thread(role, prices.temperature)
             await session.set_user_ai_data(msg.from_user.id, assistant_id=assistant_id, thread_id=thread_id)
         await state.update_data(assistant_id=assistant_id, thread_id=thread_id)
@@ -141,8 +150,8 @@ async def answer_message(msg: Message, dialog_manager: DialogManager, state: FSM
         keyboard = await get_only_vip_keyboard(translator)
         await msg.answer(text=translator['only_vip_warning'], reply_markup=keyboard)
         return
-    if user.sub and user.trial_sub and user.trial_sub.timestamp() < datetime.datetime.today().timestamp():
-        await session.set_trial_sub(user_id=msg.from_user.id, months=None)
+    if user.sub and user.sub_end and user.sub_end.timestamp() < datetime.datetime.today().timestamp():
+        await session.set_sub_end(user_id=msg.from_user.id, months=None)
         keyboard = await get_only_vip_keyboard(translator)
         await msg.answer(translator['only_vip_warning'], reply_markup=keyboard)
         return
@@ -151,13 +160,16 @@ async def answer_message(msg: Message, dialog_manager: DialogManager, state: FSM
         chat_id=msg.from_user.id,
         action='typing'
     )
-    answer = await get_text_answer(msg.text, assistant_id, thread_id)
-    await session.set_user_ai_data(msg.from_user.id, count=user_ai.count + 1)
+    text = msg.text + f'\n\nСистемное время: {msg.date.strftime("%d-%m-%Y")}'
+    answer = await get_text_answer(text, assistant_id, thread_id)
+    #if user_ai.status != 1:
+        #await session.set_user_ai_data(msg.from_user.id, count=user_ai.count + 1)
     print('user data: ', user_ai.count)
-    if user_ai.count >= 10:
+    if user_ai.count >= prices.count:
         await session.set_user_ai_data(msg.from_user.id, count=0)
         try:
             abstract = await assistant_messages_abstract(thread_id)
+            print(abstract.content)
         except Exception as err:
             print(err)
         else:
@@ -168,14 +180,15 @@ async def answer_message(msg: Message, dialog_manager: DialogManager, state: FSM
                 print(error)
     if answer is None:
         await message.delete()
-        await msg.answer('Что-то пошло не так, 🔤🔤🔤🔤пожалуйста попробуйте снова')
+        await msg.answer('Что-то пошло не так, пожалуйста попробуйте снова')
         return
+    keyboard = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='📍Меню')]], resize_keyboard=True)
     if isinstance(answer, str):
         await message.delete()
         print(answer)
-        await msg.answer(answer)
+        await msg.answer(answer, reply_markup=keyboard)
         return
-    if user_ai.status != answer.get('user_status'):
+    if user_ai.status != answer.get('user_status') and answer.get('user_status') > user_ai.status:
         prompt = get_current_prompt(answer.get('user_status'))
         print('start transfer')
         prices = await session.get_prices()
@@ -187,4 +200,4 @@ async def answer_message(msg: Message, dialog_manager: DialogManager, state: FSM
         print(jobs)
         pass
     await message.delete()
-    await msg.answer(answer.get('answer'))
+    await msg.answer(answer.get('answer'), reply_markup=keyboard)

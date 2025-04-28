@@ -39,6 +39,7 @@ class adminSG(StatesGroup):
     prompts_menu = State()
     choosen_prompt_menu = State()
     temperature_menu = State()
+    get_counter = State()
     texts_menu = State()
     get_ru_text = State()
     get_en_text = State()

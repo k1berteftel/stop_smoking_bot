@@ -19,9 +19,10 @@ class UsersTable(Base):
     user_id: Mapped[int] = mapped_column(BigInteger, unique=True)
     locale: Mapped[str] = mapped_column(VARCHAR, nullable=True)
     sub: Mapped[bool] = mapped_column(Boolean, default=False)
-    trial_sub: Mapped[datetime] = mapped_column(DateTime, default=None, nullable=True)
+    sub_end: Mapped[datetime] = mapped_column(DateTime, default=None, nullable=True)
     join: Mapped[str] = mapped_column(VARCHAR, nullable=True, default=None)  # Диплинк по которому юзер первый раз зашел в бота
     referral: Mapped[int] = mapped_column(BigInteger, nullable=True, default=None)
+    paid_referral: Mapped[bool] = mapped_column(Boolean, default=False)
     sub_referral: Mapped[int] = mapped_column(BigInteger, nullable=True, default=None)
     refs: Mapped[int] = mapped_column(BigInteger, default=0)  # Кол-во зашедших рефералов
     sub_refs: Mapped[int] = mapped_column(BigInteger, default=0)  # Кол-во зашедших рефералов
@@ -37,7 +38,7 @@ class UserAI(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.user_id'))
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.user_id', ondelete='CASCADE'))
     status: Mapped[Literal[1, 2, 3, 4]] = mapped_column(Integer, default=1)
     end_date: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=None, nullable=True)
     assistant_id: Mapped[str] = mapped_column(VARCHAR, default=None, nullable=True)
@@ -50,10 +51,19 @@ class BalanceTable(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 
-    user_id: Mapped[int] = mapped_column(ForeignKey('users.user_id'))
-    rub: Mapped[int] = mapped_column(Integer, default=0)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.user_id', ondelete='CASCADE'))
+    rub: Mapped[int] = mapped_column(Integer, default=90)
     usdt: Mapped[int] = mapped_column(Integer, default=0)
     ton: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class ApplicationsTable(Base):
+    __tablename__ = 'applications'
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.user_id', ondelete='CASCADE'))
+    amount: Mapped[int] = mapped_column(Integer)
 
 
 class DeeplinksTable(Base):
@@ -110,6 +120,7 @@ class PricesTable(Base):
     ref_price: Mapped[int] = mapped_column(Integer, default=10)
     sub_ref_price: Mapped[int] = mapped_column(Integer, default=5)
     temperature: Mapped[float] = mapped_column(Float, default=0.8)
+    count: Mapped[int] = mapped_column(Integer, default=10)
 
 
 class TextsTable(Base):

@@ -13,9 +13,9 @@ user_dialog = Dialog(
         DynamicMedia('media'),
         Format('{text}'),
         Column(
+            SwitchTo(Format('{info}'), id='info_switcher', state=startSG.info),
             SwitchTo(Format('{sub}'), id='sub_menu_switcher', state=startSG.sub_menu),
             SwitchTo(Format('{ref}'), id='ref_menu_switcher', state=startSG.ref_menu),
-            SwitchTo(Format('{info}'), id='info_switcher', state=startSG.info),
             Button(Format('{close}'), id='close_dialog', on_click=getters.close_dialog),
             Start(Const('Админ панель'), id='admin', state=adminSG.start, when='admin')
         ),

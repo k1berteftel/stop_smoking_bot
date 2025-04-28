@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import json
 import httpx
 
-from prompts.funcs import get_current_prompt, abstract_prompt
+from prompts.funcs import get_current_prompt, get_abstract_prompt
 
 
 config: Config = load_config()
@@ -28,7 +28,7 @@ client = AsyncOpenAI(
 
 async def get_answer_by_prompt(prompt: str):
     completion = await client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=[
             {
                 "role": "user",
@@ -48,7 +48,7 @@ async def get_assistant_and_thread(role: str, temperature: float, model: str = '
     """
     print(role)
     assistant = await client.beta.assistants.create(
-        model=model,
+        model='gpt-4.1-mini',
         instructions=role if role else None,
         temperature=temperature,
         name="Доктор ИИ.Бросай"
@@ -116,44 +116,44 @@ async def transfer_context(old_assistant_id: str, thread_id: str, instructions: 
     :param old_assistant_id: ID старого ассистента.
     :param thread_id: ID потока для переноса контекста.
     """
-
     thread_messages = client.beta.threads.messages.list(thread_id)
     messages = []
+
+    """
     try:
         async for msg in thread_messages:
             try:
                 messages.append(msg.model_dump())
-                await client.beta.threads.messages.delete(
-                    message_id=msg.id,
-                    thread_id=thread_id
-                )
             except Exception as err:
                 print(err)
                 continue
     except NotFoundError:
         ...
+    """
 
+    await client.beta.assistants.delete(assistant_id=old_assistant_id)
+
+    #message = await get_messages_abstract(messages)
+
+    print(instructions)
     new_assistant = await client.beta.assistants.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         temperature=temperature,
         instructions=instructions
     )
+    #await clear_chat_history(thread_id)
 
-    for message in messages:
-        print(message['role'])
-        print(message['content'][0]['text']['value'])
-        await client.beta.threads.messages.create(
-            thread_id=thread_id,
-            role=message['role'],
-            content=message['content'][0]['text']['value']
-        )
-
-    print(new_assistant.instructions)
-    await client.beta.assistants.delete(assistant_id=old_assistant_id)
+    print('Смена статуса')
+    #for message in messages:
+        #await client.beta.threads.messages.create(
+            #thread_id=thread_id,
+            #role=message['role'],
+            #content=message["content"][0]['text']['value']
+        #)
     return new_assistant.id
 
 
-async def assistant_messages_abstract(thread_id: str):
+async def assistant_messages_abstract(thread_id: str, save_abstract: bool = True):
     thread_messages = client.beta.threads.messages.list(thread_id)
 
     print(thread_messages)
@@ -171,14 +171,27 @@ async def assistant_messages_abstract(thread_id: str):
                 continue
     except NotFoundError:
         ...
+    if save_abstract:
+        abstract = messages[-1]
+        messages = messages[0:-1:]
 
     message = await get_messages_abstract(messages)
 
-    await client.beta.threads.messages.create(
-        thread_id=thread_id,
-        role=message.role,
-        content=message.content
-    )
+
+    await clear_chat_history(thread_id)
+
+    if not save_abstract:
+        await client.beta.threads.messages.create(
+            thread_id=thread_id,
+            role=message.role,
+            content=message.content
+        )
+    else:
+        await client.beta.threads.messages.create(
+            thread_id=thread_id,
+            role=message.role,
+            content=abstract["content"][0]['text']['value'] + '\n\n' + message.content
+        )
     return message
 
 
@@ -201,18 +214,15 @@ async def clear_chat_history(thread_id: str):
 
 async def set_chat_history(thread_id: str):
     await clear_chat_history(thread_id)
-    with open('prompts/Конспект.txt', 'r+', encoding='utf-8') as f:
-        contents = f.read().strip().split('\n\n\n\n')
+    with open('prompts/КонспектГотов.txt', 'r+', encoding='utf-8') as f:
+        content = f.read().strip()
     messages = []
-    counter = 0
-    for content in contents:
-        messages.append(
-            SystemMessage(
-                role='assistant' if counter != 2 else 'user',
-                content=content
-            )
+    messages.append(
+        SystemMessage(
+            role='user',
+            content=content
         )
-        counter += 1
+    )
     for message in messages:
         await client.beta.threads.messages.create(
             thread_id=thread_id,
@@ -231,6 +241,7 @@ async def get_messages_abstract(datas: list[dict]) -> SystemMessage:
                         "content": json.loads(data["content"][0]['text']['value'])['answer'],
                     },
                 )
+            print(json.loads(data["content"][0]['text']['value'])['answer'])
         except Exception:
             dialog_messages.append(
                         {
@@ -238,14 +249,17 @@ async def get_messages_abstract(datas: list[dict]) -> SystemMessage:
                             "content": data["content"][0]['text']['value'],
                         },
                     )
+            print(data["content"][0]['text']['value'])
+
+    print(get_abstract_prompt())
     dialog_messages.append(
         {
             "role": "user",
-            "content": abstract_prompt,
+            "content": get_abstract_prompt(),
         },
     )
     completion = await client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=dialog_messages
     )
     dialog_abstract = completion.choices[0].message.content

@@ -2,7 +2,7 @@ import asyncio
 import uuid
 from aiogram import Bot
 from aiogram.types import (CallbackQuery, User, Message, LabeledPrice, InlineKeyboardButton,
-                           InlineKeyboardMarkup, ContentType)
+                           InlineKeyboardMarkup, ContentType, ReplyKeyboardMarkup, KeyboardButton)
 from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.api.entities import MediaAttachment, MediaId
 from aiogram_dialog.widgets.kbd import Button, Select
@@ -11,6 +11,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from yookassa import Payment, Configuration, Payout
 
 from utils.prices_funcs import get_usdt_rub
+from utils.ai_funcs import get_assistant_and_thread, get_text_answer
+from prompts.funcs import get_current_prompt
 from utils.schdulers import check_payment
 from utils.translator.translator import Translator
 from database.action_data_class import DataInteraction
@@ -27,7 +29,7 @@ config: Config = load_config()
 async def start_getter(event_from_user: User, dialog_manager: DialogManager, **kwargs):
     session: DataInteraction = dialog_manager.middleware_data.get('session')
     translator: Translator = dialog_manager.middleware_data.get('translator')
-    media_id = MediaId(file_id='AgACAgIAAxkBAAM3Z-QLzEXIBU865pSSPn69jafliXQAAnD8MRummCFL-zpvZdAR1SEBAAMCAAN5AAM2BA')
+    media_id = MediaId(file_id='AgACAgIAAxkBAAIHymf6rE2IUtTRhaBL9ZNgDDC6hntsAAKt7DEbLfjYS4O6Klscz1uzAQADAgADeQADNgQ')
     media = MediaAttachment(file_id=media_id, type=ContentType.PHOTO)
     admin = False
     if event_from_user.id in config.bot.admin_ids:
@@ -54,9 +56,34 @@ async def get_voucher(msg: Message, widget: ManagedTextInput, dialog_manager: Di
     await msg.delete()
     if await session.check_voucher(msg.from_user.id, text):
         amount = await session.get_voucher_amount(text)
-        await session.set_trial_sub(msg.from_user.id, amount)
+        await session.set_sub_end(msg.from_user.id, amount)
         await msg.answer(translator['success_voucher_notification'])
-        await dialog_manager.switch_to(startSG.sub_menu)
+        keyboard = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='📍Меню')]], resize_keyboard=True)
+        message = await msg.answer(translator['writing_action'])
+        await msg.bot.send_chat_action(
+            chat_id=msg.from_user.id,
+            action='typing'
+        )
+        user_ai = await session.get_user_ai(msg.from_user.id)
+        assistant_id, thread_id = user_ai.assistant_id, user_ai.thread_id
+        if not assistant_id or not thread_id:
+            role = get_current_prompt(user_ai.status)
+            prices = await session.get_prices()
+            assistant_id, thread_id = await get_assistant_and_thread(role, prices.temperature)
+            await session.set_user_ai_data(msg.from_user.id, assistant_id=assistant_id, thread_id=thread_id)
+        answer = await get_text_answer(translator['start_ai'], assistant_id, thread_id)
+        await session.set_user_ai_data(msg.from_user.id, count=user_ai.count + 1)
+        if isinstance(answer, str):
+            print(answer)
+            await msg.answer(answer, reply_markup=keyboard)
+            await message.delete()
+            await dialog_manager.done()
+            await msg.delete()
+            return
+        await msg.answer(answer.get('answer'), reply_markup=keyboard)
+        await message.delete()
+        await dialog_manager.done()
+        #await dialog_manager.switch_to(startSG.sub_menu)
     else:
         await msg.answer(translator['no_voucher_notification'])
 
@@ -78,15 +105,15 @@ async def sub_menu_getter(event_from_user: User, dialog_manager: DialogManager, 
     if user.locale == 'ru':
         text = texts.sub_ru + '\n\n' + (translator['sub'].format(
             sub=((translator['sub_widget'] + translator['sub_trial_widget'].format(
-                date=user.trial_sub.strftime('%d-%m-%Y'))
-            ) if user.trial_sub else translator['sub_widget'])
+                date=user.sub_end.strftime('%d-%m-%Y'))
+            ) if user.sub_end else translator['sub_widget'])
             if user.sub else translator['no_sub_widget'])
         )
     else:
         text = texts.sub_en + '\n\n' + (translator['sub'].format(
             sub=((translator['sub_widget'] + translator['sub_trial_widget'].format(
-                date=user.trial_sub.strftime('%d-%m-%Y'))
-            ) if user.trial_sub else translator['sub_widget'])
+                date=user.sub_end.strftime('%d-%m-%Y'))
+            ) if user.sub_end else translator['sub_widget'])
             if user.sub else translator['no_sub_widget'])
         )
     return {
@@ -255,37 +282,26 @@ async def get_derive_card(msg: Message, widget: ManagedTextInput, dialog_manager
     session: DataInteraction = dialog_manager.middleware_data.get('session')
     translator: Translator = dialog_manager.middleware_data.get('translator')
     await msg.delete()
-    try:
-        card = int(''.join([card for card in text.strip().split(' ')]))
-    except Exception:
-        await msg.answer(translator['only_integer_card_warning'])
-        return
-    if len(str(card)) != 16:
-        await msg.answer(translator['enough_card_len_warning'])
-        return
-    message = await msg.answer(translator['start_money_transfer'])
+    await msg.answer(translator['start_money_transfer'])
     amount = dialog_manager.dialog_data.get("amount")
-    idempotence_key = str(uuid.uuid4())
-    payout = await Payout.create({
-        "amount": {
-            "value": str(float(amount)),
-            "currency": "RUB"
-        },
-        "payout_destination_data": {
-            "type": "bank_card",
-            "card": {
-                "number": str(card)
-            }
-        },
-        "description": "Выплата по реферальной программе",
-    }, idempotence_key)
-    payout_id = payout.id
-    while payout.status != 'succeeded':
-        payout = await Payout.find_one(payout_id)
-        await asyncio.sleep(0.5)
-    await session.update_user_balance(msg.from_user.id, -amount, 'rub')
-    await message.delete()
-    await msg.answer(translator['success_payout'])
+    user = await session.get_user(msg.from_user.id)
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text='Подтвердить перевод', callback_data=f'confirm_{msg.from_user.id}')],
+            [InlineKeyboardButton(text='Отклонить', callback_data=f'decline_{msg.from_user.id}')]
+        ]
+    )
+    if not await session.add_application(msg.from_user.id, amount):
+        await msg.answer(translator['one_application_warning'])
+        dialog_manager.dialog_data.clear()
+        await dialog_manager.switch_to(startSG.ref_menu)
+        return
+    await msg.bot.send_message(
+        chat_id=config.bot.admin_ids[0],
+        text=f'Заявка на вывод средств. Данные по заявке:\n - Юзернейм: @{user.username}\n - Сумма для вывода: {amount}'
+             f'Руб\n - Реквизиты для вывода: {text}',
+        reply_markup=keyboard
+    )
     dialog_manager.dialog_data.clear()
     await dialog_manager.switch_to(startSG.ref_menu)
 
