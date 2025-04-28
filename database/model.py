@@ -52,7 +52,7 @@ class BalanceTable(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 
     user_id: Mapped[int] = mapped_column(ForeignKey('users.user_id', ondelete='CASCADE'))
-    rub: Mapped[int] = mapped_column(Integer, default=90)
+    rub: Mapped[int] = mapped_column(Integer, default=0)
     usdt: Mapped[int] = mapped_column(Integer, default=0)
     ton: Mapped[int] = mapped_column(Integer, default=0)
 
