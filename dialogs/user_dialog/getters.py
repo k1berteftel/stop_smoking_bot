@@ -118,7 +118,8 @@ async def sub_menu_getter(event_from_user: User, dialog_manager: DialogManager, 
             if user.sub else translator['no_sub_widget'])
         )
     if texts.sub_photo:
-        media = texts.sub_photo
+        media = MediaId(file_id=texts.sub_photo)
+        media = MediaAttachment(type=ContentType.PHOTO, file_id=media)
     return {
         'text': text,
         'media': media,
@@ -239,7 +240,8 @@ async def ref_menu_getter(event_from_user: User, dialog_manager: DialogManager, 
     else:
         text = ref_text + translator['ref_no_sub']
     if texts.ref_photo:
-        media = texts.ref_photo
+        media = MediaId(file_id=texts.ref_photo)
+        media = MediaAttachment(type=ContentType.PHOTO, file_id=media)
     return {
         'text': text,
         'media': media,
@@ -325,7 +327,8 @@ async def info_getter(event_from_user: User, dialog_manager: DialogManager, **kw
     else:
         info_text = texts.info_en
     if texts.info_photo:
-        media = texts.info_photo
+        media = MediaId(file_id=texts.info_photo)
+        media = MediaAttachment(type=ContentType.PHOTO, file_id=media)
     return {
         'text': info_text,
         'media': media,
