@@ -206,14 +206,34 @@ async def en_text_getter(dialog_manager: DialogManager, **kwargs):
 
 
 async def get_en_text(msg: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
+    dialog_manager.dialog_data['text_en'] = text
+    await dialog_manager.switch_to(adminSG.get_text_photo)
+
+
+async def get_text_photo(msg: Message, widget: MessageInput, dialog_manager: DialogManager):
     session: DataInteraction = dialog_manager.middleware_data.get('session')
     column = dialog_manager.dialog_data.get('text')
     datas = {
         column + '_ru': dialog_manager.dialog_data.get('text_ru'),
-        column + '_en': text
+        column + '_en': dialog_manager.dialog_data.get('text_en'),
+        column + '_photo': msg.photo[-1].file_id
     }
     await session.set_texts(**datas)
-    await msg.answer('Новые текста были успешно сохранены')
+    await msg.answer('Новые текста с фото были успешно сохранены')
+    dialog_manager.dialog_data.clear()
+    await dialog_manager.switch_to(adminSG.texts_menu)
+
+
+async def no_photo_text_switcher(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    column = dialog_manager.dialog_data.get('text')
+    datas = {
+        column + '_ru': dialog_manager.dialog_data.get('text_ru'),
+        column + '_en': dialog_manager.dialog_data.get('text_en'),
+        column + '_photo': None
+    }
+    await session.set_texts(**datas)
+    await clb.message.answer('Новые текста были успешно сохранены')
     dialog_manager.dialog_data.clear()
     await dialog_manager.switch_to(adminSG.texts_menu)
 

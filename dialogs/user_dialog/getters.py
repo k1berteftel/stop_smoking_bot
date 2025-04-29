@@ -102,6 +102,7 @@ async def sub_menu_getter(event_from_user: User, dialog_manager: DialogManager, 
     translator: Translator = dialog_manager.middleware_data.get('translator')
     user = await session.get_user(event_from_user.id)
     texts = await session.get_texts()
+    media = False
     if user.locale == 'ru':
         text = texts.sub_ru + '\n\n' + (translator['sub'].format(
             sub=((translator['sub_widget'] + translator['sub_trial_widget'].format(
@@ -116,8 +117,11 @@ async def sub_menu_getter(event_from_user: User, dialog_manager: DialogManager, 
             ) if user.sub_end else translator['sub_widget'])
             if user.sub else translator['no_sub_widget'])
         )
+    if texts.sub_photo:
+        media = texts.sub_photo
     return {
         'text': text,
+        'media': media,
         'rub': translator['rub_button'],
         'stars': translator['stars_button'],
         'ton': translator['ton_button'],
@@ -223,6 +227,7 @@ async def ref_menu_getter(event_from_user: User, dialog_manager: DialogManager, 
     translator: Translator = dialog_manager.middleware_data.get('translator')
     user = await session.get_user(event_from_user.id)
     texts = await session.get_texts()
+    media = False
     if user.locale == 'ru':
         ref_text = texts.ref_ru
     else:
@@ -233,8 +238,11 @@ async def ref_menu_getter(event_from_user: User, dialog_manager: DialogManager, 
                                          user_id=user.user_id)
     else:
         text = ref_text + translator['ref_no_sub']
+    if texts.ref_photo:
+        media = texts.ref_photo
     return {
-        'text': ref_text + text,
+        'text': text,
+        'media': media,
         'derive': translator['derive_button'],
         'share': translator['share_button'],
         'user_id': user.user_id,
@@ -311,11 +319,15 @@ async def info_getter(event_from_user: User, dialog_manager: DialogManager, **kw
     translator: Translator = dialog_manager.middleware_data.get('translator')
     user = await session.get_user(event_from_user.id)
     texts = await session.get_texts()
+    media = False
     if user.locale == 'ru':
         info_text = texts.info_ru
     else:
         info_text = texts.info_en
+    if texts.info_photo:
+        media = texts.info_photo
     return {
         'text': info_text,
+        'media': media,
         'back': translator['back']
     }

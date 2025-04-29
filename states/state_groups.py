@@ -43,5 +43,6 @@ class adminSG(StatesGroup):
     texts_menu = State()
     get_ru_text = State()
     get_en_text = State()
+    get_text_photo = State()
     condition_menu = State()
     user_condition_menu = State()

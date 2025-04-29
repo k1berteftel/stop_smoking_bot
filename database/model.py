@@ -128,12 +128,15 @@ class TextsTable(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 
+    info_photo: Mapped[str] = mapped_column(VARCHAR, default=None, nullable=True)
     info_ru: Mapped[str] = mapped_column(String, default='Текст')
     info_en: Mapped[str] = mapped_column(String, default='Текст')
 
+    sub_photo: Mapped[str] = mapped_column(VARCHAR, default=None, nullable=True)
     sub_ru: Mapped[str] = mapped_column(String, default='Текст')
     sub_en: Mapped[str] = mapped_column(String, default='Текст')
 
+    ref_photo: Mapped[str] = mapped_column(VARCHAR, default=None, nullable=True)
     ref_ru: Mapped[str] = mapped_column(String, default='Текст')
     ref_en: Mapped[str] = mapped_column(String, default='Текст')
 

@@ -23,6 +23,7 @@ user_dialog = Dialog(
         state=startSG.start
     ),
     Window(  # для тех у кого уже есть подписка другой текст и нету кнопок
+        DynamicMedia('media', when='media'),
         Format('{text}'),
         Column(
             Button(Format('{rub}'), id='rub_payment_choose', on_click=getters.choose_payment, when='ru'),
@@ -54,6 +55,7 @@ user_dialog = Dialog(
         state=startSG.rub_payment_menu
     ),
     Window(
+        DynamicMedia('media', when='media'),
         Format('{text}'),
         Column(
             Url(Format('{share}'), url=Format('http://t.me/share/url?url=https://t.me/AiStopSmoking_bot?start={user_id}'), when='sub'),
@@ -84,6 +86,7 @@ user_dialog = Dialog(
         state=startSG.get_derive_card
     ),
     Window(
+        DynamicMedia('media', when='media'),
         Format('{text}'),
         SwitchTo(Format('{back}'), id='back', state=startSG.start),
         getter=getters.info_getter,

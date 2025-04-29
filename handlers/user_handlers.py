@@ -22,9 +22,9 @@ user_router = Router()
 @user_router.message(CommandStart())
 async def start_dialog(msg: Message, dialog_manager: DialogManager, session: DataInteraction, command: CommandObject, scheduler: AsyncIOScheduler):
     #  ___
-    user_ai = await session.get_user_ai(1236300146)
+    #user_ai = await session.get_user_ai(1236300146)
     #await clear_chat_history(user_ai.thread_id)
-    print(await _get_chat_history(user_ai.thread_id))
+    #print(await _get_chat_history(user_ai.thread_id))
     #  ___
     keyboard = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='📍Меню')]], resize_keyboard=True)
     #text = 'Привет! Готов начать путь к здоровой жизни? Мы поможем тебе отказаться от курения. Давай вместе сделаем первый шаг!'

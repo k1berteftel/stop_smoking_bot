@@ -90,6 +90,15 @@ admin_dialog = Dialog(
         state=adminSG.get_en_text
     ),
     Window(
+        Const('Отправьте фото, которое будет находиться над введенным вами текстом'),
+        MessageInput(
+            getters.get_text_photo,
+            content_types=ContentType.PHOTO
+        ),
+        Button(Const('Без фото'), id='no_photo_text_switcher', on_click=getters.no_photo_text_switcher),
+        state=adminSG.get_text_photo
+    ),
+    Window(
         Format('Действующая температура: {temperature}'),
         Const('Если хотите ее поменять отправьте число в диапозоне от 0 до 1'),
         TextInput(
