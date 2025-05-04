@@ -148,12 +148,20 @@ async def answer_message(msg: Message, dialog_manager: DialogManager, state: FSM
         await state.update_data(assistant_id=assistant_id, thread_id=thread_id)
     if user_ai.status != 1 and not user.sub:
         keyboard = await get_only_vip_keyboard(translator)
-        await msg.answer(text=translator['only_vip_warning'], reply_markup=keyboard)
+        await msg.answer_photo(
+            photo='AgACAgIAAxkBAAIud2gX9LqFipbhoZw92X0xTterBXuTAAIVAzIbhhrBSDeTVUT3q5k1AQADAgADeQADNgQ',
+            text=translator['only_vip_warning'],
+            reply_markup=keyboard
+        )
         return
     if user.sub and user.sub_end and user.sub_end.timestamp() < datetime.datetime.today().timestamp():
         await session.set_sub_end(user_id=msg.from_user.id, months=None)
         keyboard = await get_only_vip_keyboard(translator)
-        await msg.answer(translator['only_vip_warning'], reply_markup=keyboard)
+        await msg.answer_photo(
+            photo='AgACAgIAAxkBAAIud2gX9LqFipbhoZw92X0xTterBXuTAAIVAzIbhhrBSDeTVUT3q5k1AQADAgADeQADNgQ',
+            text=translator['only_vip_warning'],
+            reply_markup=keyboard
+        )
         return
     message = await msg.answer(translator['writing_action'])
     await msg.bot.send_chat_action(

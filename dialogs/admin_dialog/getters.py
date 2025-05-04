@@ -152,15 +152,15 @@ async def get_static(clb: CallbackQuery, widget: Button, dialog_manager: DialogM
             activity += 1
         if user.sub:
             subs += 1
-        if not user.join and not user.referral:
+        if not user.join and not user.referral and user.active:
             transitions['basic']['users'] += 1
             if user.sub:
                 transitions['basic']['subs'] += 1
-        if user.referral:
+        if user.referral and user.active:
             transitions['ref']['users'] += 1
             if user.sub:
                 transitions['ref']['subs'] += 1
-        if user.join:
+        if user.join and user.active:
             transitions['deeplink']['users'] += 1
             if user.sub:
                 transitions['deeplink']['sub'] += 1
@@ -379,6 +379,8 @@ async def deeplink_menu_getter(dialog_manager: DialogManager, **kwargs):
         activity = 0
         subs = 0
         for user in users:
+            if not user.active:
+                continue
             if user.active:
                 active += 1
             if user.entry > datetime.datetime.today() - datetime.timedelta(days=1):
