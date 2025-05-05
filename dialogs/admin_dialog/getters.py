@@ -150,7 +150,7 @@ async def get_static(clb: CallbackQuery, widget: Button, dialog_manager: DialogM
                     entry['2_day_ago'] = entry.get('2_day_ago') + 1
         if user.activity.date() > (datetime.datetime.today() - datetime.timedelta(days=1)).date():
             activity += 1
-        if user.sub:
+        if user.sub and user.active:
             subs += 1
         if not user.join and not user.referral and user.active:
             transitions['basic']['users'] += 1
@@ -391,7 +391,10 @@ async def deeplink_menu_getter(dialog_manager: DialogManager, **kwargs):
                 subs += 1
         text += (f'({link.name})https://t.me/AiStopSmoking_bot?start={link.link}: {link.entry}\nЗашло: {len(users)}'
                  f', активных: {active}, зашло сегодня: {today}, приобрели подписку: {subs}, активны в последние 24 часа: {activity}\n')
-    count = len([user.user_id if not user.join else ... for user in await session.get_users()])
+    count = 0
+    for user in await session.get_users():
+        if not user.join:
+            count += 1
     print(count)
     return {
         'links': text,
