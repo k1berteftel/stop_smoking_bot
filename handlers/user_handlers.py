@@ -150,7 +150,7 @@ async def answer_message(msg: Message, dialog_manager: DialogManager, state: FSM
         keyboard = await get_only_vip_keyboard(translator)
         await msg.answer_photo(
             photo='AgACAgIAAxkBAAIud2gX9LqFipbhoZw92X0xTterBXuTAAIVAzIbhhrBSDeTVUT3q5k1AQADAgADeQADNgQ',
-            text=translator['only_vip_warning'],
+            caption=translator['only_vip_warning'],
             reply_markup=keyboard
         )
         return
@@ -159,7 +159,7 @@ async def answer_message(msg: Message, dialog_manager: DialogManager, state: FSM
         keyboard = await get_only_vip_keyboard(translator)
         await msg.answer_photo(
             photo='AgACAgIAAxkBAAIud2gX9LqFipbhoZw92X0xTterBXuTAAIVAzIbhhrBSDeTVUT3q5k1AQADAgADeQADNgQ',
-            text=translator['only_vip_warning'],
+            caption=translator['only_vip_warning'],
             reply_markup=keyboard
         )
         return
