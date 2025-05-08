@@ -150,7 +150,7 @@ async def get_static(clb: CallbackQuery, widget: Button, dialog_manager: DialogM
                     entry['2_day_ago'] = entry.get('2_day_ago') + 1
         if user.activity.date() > (datetime.datetime.today() - datetime.timedelta(days=1)).date():
             activity += 1
-        if user.sub and user.active:
+        if user.sub:
             subs += 1
         if not user.join and not user.referral and user.active:
             transitions['basic']['users'] += 1
@@ -164,6 +164,8 @@ async def get_static(clb: CallbackQuery, widget: Button, dialog_manager: DialogM
             transitions['deeplink']['users'] += 1
             if user.sub:
                 transitions['deeplink']['sub'] += 1
+        if not user.active:
+            continue
         statuses[user.AI.status] = statuses.get(user.AI.status) + 1
 
     text = (
@@ -379,8 +381,6 @@ async def deeplink_menu_getter(dialog_manager: DialogManager, **kwargs):
         activity = 0
         subs = 0
         for user in users:
-            if not user.active:
-                continue
             if user.active:
                 active += 1
             if user.entry > datetime.datetime.today() - datetime.timedelta(days=1):
@@ -392,12 +392,25 @@ async def deeplink_menu_getter(dialog_manager: DialogManager, **kwargs):
         text += (f'({link.name})https://t.me/AiStopSmoking_bot?start={link.link}: {link.entry}\nЗашло: {len(users)}'
                  f', активных: {active}, зашло сегодня: {today}, приобрели подписку: {subs}, активны в последние 24 часа: {activity}\n')
     count = 0
+    active = 0
+    today = 0
+    activity = 0
+    subs = 0
     for user in await session.get_users():
         if not user.join:
             count += 1
-    print(count)
+            if user.active:
+                active += 1
+            if user.entry > datetime.datetime.today() - datetime.timedelta(days=1):
+                today += 1
+            if user.activity > datetime.datetime.today() - datetime.timedelta(days=1):
+                activity += 1
+            if user.sub:
+                subs += 1
+    text_2 = (f'\n\nСтатистика без диплинков:\nактивных: {active}, зашло сегодня: {today}, приобрели подписку: {subs}, '
+              f'активны в последние 24 часа: {activity}\n')
     return {
-        'links': text,
+        'links': text + text_2,
         'joins': count
     }
 
