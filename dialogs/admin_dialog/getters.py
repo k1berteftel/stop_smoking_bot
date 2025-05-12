@@ -136,11 +136,15 @@ async def get_static(clb: CallbackQuery, widget: Button, dialog_manager: DialogM
             'subs': 0
         }
     }
+    with open('Мониторинг.txt', 'a') as file:
+        file.write(f'Статистика на {datetime.datetime.today().date()}\n\n')
     for user in users:
         if user.active:
             active += 1
         for day in range(0, 3):
             print(user.entry.date(), (datetime.datetime.today() - datetime.timedelta(days=day)).date())
+            with open('Мониторинг.txt', 'a') as file:
+                file.write(f'\t({day} день){user.entry.date()} {(datetime.datetime.today() - datetime.timedelta(days=day)).date()}\n')
             if user.entry.date() == (datetime.datetime.today() - datetime.timedelta(days=day)).date():
                 if day == 0:
                     entry['today'] = entry.get('today') + 1

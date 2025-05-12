@@ -24,10 +24,16 @@ class DB:
 
 
 @dataclass
+class NatsConfig:
+    servers: list[str]
+
+
+@dataclass
 class Config:
     bot: tg_bot
     db: DB
     ai: OpenAi
+    nats: NatsConfig
 
 
 def load_config(path: str | None = None) -> Config:
@@ -44,5 +50,8 @@ def load_config(path: str | None = None) -> Config:
         ),
         ai=OpenAi(
             token=env('ai-token')
+        ),
+        nats=NatsConfig(
+            servers=env.list('nats')
         )
     )

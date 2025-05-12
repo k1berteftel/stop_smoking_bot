@@ -123,12 +123,28 @@ async def remind_user_ai(user_id: int, bot: Bot, session: DataInteraction, trans
 
 Не пиши сообщения подряд. Делай соответствующий интервал."""
     answer = await get_text_answer(prompt, assistant_id, thread_id)
+    if answer is None:
+        return
     await session.set_user_ai_data(user_id, count=user_ai.count + 1)
     if isinstance(answer, str):
         print(answer)
-        await bot.send_message(chat_id=user_id, text=answer)
-        return
-    await bot.send_message(chat_id=user_id, text=answer.get('answer'))
+        try:
+            await bot.send_message(chat_id=user_id, text=answer)
+        except Exception:
+            await session.set_active(user_id, 0)
+            job = scheduler.get_job(job_id=f'remind_{user_id}')
+            if job:
+                job.remove()
+            return
+    else:
+        try:
+            await bot.send_message(chat_id=user_id, text=answer.get('answer'))
+        except Exception:
+            await session.set_active(user_id, 0)
+            job = scheduler.get_job(job_id=f'remind_{user_id}')
+            if job:
+                job.remove()
+            return
     job = scheduler.get_job(job_id=f'remind_{user_id}')
     if job:
         job.remove()
@@ -147,3 +163,4 @@ async def remind_user_ai(user_id: int, bot: Bot, session: DataInteraction, trans
             id=f'remind_{user_id}',
             next_run_time=date
         )
+

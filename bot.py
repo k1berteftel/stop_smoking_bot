@@ -19,6 +19,9 @@ from handlers.payment_handlers import payment_router
 from handlers.user_handlers import user_router
 from handlers.admin_handlers import admin_router
 from dialogs import get_dialogs
+from utils.start_service import start_schedulers
+from utils.nats_connect import connect_to_nats
+from storage.nats_storage import NatsStorage
 from middlewares import TransferObjectsMiddleware, RemindMiddleware
 
 
@@ -56,9 +59,13 @@ async def main():
     scheduler.timezone = timezone
     scheduler.start()
 
-    bot = Bot(token=config.bot.token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    dp = Dispatcher()
+    nc, js = await connect_to_nats(servers=config.nats.servers)
+    storage: NatsStorage = await NatsStorage(nc=nc, js=js).create_storage()
 
+    bot = Bot(token=config.bot.token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    dp = Dispatcher(storage=storage)
+
+    await start_schedulers(session, scheduler, bot)
     # подключаем роутеры
     dp.include_routers(*get_dialogs(), user_router, admin_router, payment_router)
 
