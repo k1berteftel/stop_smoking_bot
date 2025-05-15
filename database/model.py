@@ -29,7 +29,7 @@ class UsersTable(Base):
     active: Mapped[int] = mapped_column(Integer, default=1)
     entry: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=func.now())
     activity: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=func.now())
-    malling: Mapped[bool] = mapped_column(Boolean, default=True)
+    malling: Mapped[bool] = mapped_column(Boolean, default=True, nullable=True, server_default=True)
     AI: Mapped["UserAI"] = relationship('UserAI', lazy="selectin", cascade='delete', uselist=False)
     balance: Mapped["BalanceTable"] = relationship('BalanceTable', lazy="selectin", cascade='delete', uselist=False)
 

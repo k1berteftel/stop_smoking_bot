@@ -523,18 +523,19 @@ async def start_malling(clb: CallbackQuery, widget: Button, dialog_manager: Dial
     users = await session.get_users()
     if not time:
         for user in users:
-            try:
-                await bot.copy_message(
-                    chat_id=user.user_id,
-                    from_chat_id=message[1],
-                    message_id=message[0],
-                    reply_markup=InlineKeyboardMarkup(inline_keyboard=[keyboard]) if keyboard else None
-                )
-                if user.active == 0:
-                    await session.set_active(user.user_id, 1)
-            except Exception as err:
-                print(err)
-                await session.set_active(user.user_id, 0)
+            if user.malling:
+                try:
+                    await bot.copy_message(
+                        chat_id=user.user_id,
+                        from_chat_id=message[1],
+                        message_id=message[0],
+                        reply_markup=InlineKeyboardMarkup(inline_keyboard=[keyboard]) if keyboard else None
+                    )
+                    if user.active == 0:
+                        await session.set_active(user.user_id, 1)
+                except Exception as err:
+                    print(err)
+                    await session.set_active(user.user_id, 0)
         await clb.answer('Рассылка прошла успешно')
     else:
         date = datetime.datetime.strptime(time, '%H:%M %d.%m')
