@@ -50,7 +50,7 @@ async def start_getter(event_from_user: User, dialog_manager: DialogManager, **k
 async def malling_toggle(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
     session: DataInteraction = dialog_manager.middleware_data.get('session')
     user = await session.get_user(clb.from_user.id)
-    await session.set_malling_status(clb.from_user.id, not user.malling)
+    await session.set_malling_status(clb.from_user.id, not user.malling if user.malling else True)
     await dialog_manager.switch_to(startSG.start)
 
 
