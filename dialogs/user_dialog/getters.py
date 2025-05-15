@@ -29,6 +29,7 @@ config: Config = load_config()
 async def start_getter(event_from_user: User, dialog_manager: DialogManager, **kwargs):
     session: DataInteraction = dialog_manager.middleware_data.get('session')
     translator: Translator = dialog_manager.middleware_data.get('translator')
+    user = await session.get_user(event_from_user.id)
     media_id = MediaId(file_id='AgACAgIAAxkBAAIHymf6rE2IUtTRhaBL9ZNgDDC6hntsAAKt7DEbLfjYS4O6Klscz1uzAQADAgADeQADNgQ')
     media = MediaAttachment(file_id=media_id, type=ContentType.PHOTO)
     admin = False
@@ -39,10 +40,18 @@ async def start_getter(event_from_user: User, dialog_manager: DialogManager, **k
         'ref': translator['ref_button'],
         'sub': translator['sub_button'],
         'info': translator['info_button'],
+        'switch': translator['on_malling_button'] if not user.malling else translator['off_malling_button'],
         'close': translator['close_button'],
         'media': media,
         'admin': admin
     }
+
+
+async def malling_toggle(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    user = await session.get_user(clb.from_user.id)
+    await session.set_malling_status(clb.from_user.id, not user.malling)
+    await dialog_manager.switch_to(startSG.start)
 
 
 async def close_dialog(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):

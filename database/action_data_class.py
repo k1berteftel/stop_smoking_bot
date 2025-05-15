@@ -314,6 +314,13 @@ class DataInteraction():
             ))
             await session.commit()
 
+    async def set_malling_status(self, user_id: int, malling: bool):
+        async with self._sessions() as session:
+            await session.execute(update(UsersTable).where(UsersTable.user_id == user_id).values(
+                malling=malling
+            ))
+            await session.commit()
+
     async def del_deeplink(self, link: str):
         async with self._sessions() as session:
             await session.execute(delete(DeeplinksTable).where(DeeplinksTable.link == link))

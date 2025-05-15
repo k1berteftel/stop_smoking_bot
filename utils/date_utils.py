@@ -3,8 +3,8 @@ from dateutil.relativedelta import relativedelta
 
 from database.action_data_class import DataInteraction
 
-time_range: list[int] = list(range(22, 25))
-time_range.extend(range(0, 8))
+time_range: list[int] = list(range(19, 25))
+time_range.extend(range(0, 11))
 
 
 async def get_touch_date(user_id: int, session: DataInteraction) -> datetime.datetime | list[datetime.datetime]:

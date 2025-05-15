@@ -1,6 +1,6 @@
 from typing import List, Literal
 from datetime import datetime
-from sqlalchemy import BigInteger, VARCHAR, ForeignKey, DateTime, Boolean, Column, Integer, String, Float
+from sqlalchemy import BigInteger, VARCHAR, ForeignKey, DateTime, Boolean, Column, Integer, String, Float, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship, DeclarativeBase
 from sqlalchemy.ext.asyncio import AsyncAttrs
 
@@ -27,8 +27,9 @@ class UsersTable(Base):
     refs: Mapped[int] = mapped_column(BigInteger, default=0)  # Кол-во зашедших рефералов
     sub_refs: Mapped[int] = mapped_column(BigInteger, default=0)  # Кол-во зашедших рефералов
     active: Mapped[int] = mapped_column(Integer, default=1)
-    entry: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.today())
-    activity: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.today())
+    entry: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=func.now())
+    activity: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=func.now())
+    malling: Mapped[bool] = mapped_column(Boolean, default=True)
     AI: Mapped["UserAI"] = relationship('UserAI', lazy="selectin", cascade='delete', uselist=False)
     balance: Mapped["BalanceTable"] = relationship('BalanceTable', lazy="selectin", cascade='delete', uselist=False)
 

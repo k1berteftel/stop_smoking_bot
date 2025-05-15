@@ -13,6 +13,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from database.action_data_class import DataInteraction
 from utils.translator.translator import Translator
 from utils.translator import Translator as create_translator
+from utils.schdulers import bot_writing
 from states import state_groups as states
 
 
@@ -205,7 +206,18 @@ async def answer_message(msg: Message, dialog_manager: DialogManager, state: FSM
         await state.update_data(assistant_id=assistant_id)
     if answer.get('jobs'):
         jobs = answer.get('jobs')
-        print(jobs)
-        pass
+        for job in jobs:
+            if not job.get('description'):
+                continue
+            try:
+                date = datetime.datetime.strptime(job.get('time'), '%Y-%m-%d %H:%M:%S')
+                scheduler.add_job(
+                    bot_writing,
+                    args=[msg.from_user.id, msg.bot, session, job.get('description')],
+                    next_run_time=date
+                )
+            except Exception as err:
+                print('scheduler error', err)
+                continue
     await message.delete()
     await msg.answer(answer.get('answer'), reply_markup=keyboard)

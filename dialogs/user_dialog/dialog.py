@@ -17,6 +17,7 @@ user_dialog = Dialog(
             SwitchTo(Format('{sub}'), id='sub_menu_switcher', state=startSG.sub_menu),
             SwitchTo(Format('{ref}'), id='ref_menu_switcher', state=startSG.ref_menu),
             Button(Format('{close}'), id='close_dialog', on_click=getters.close_dialog),
+            Button(Format('{switch}'), id='malling_toggle', on_click=getters.malling_toggle),
             Start(Const('Админ панель'), id='admin', state=adminSG.start, when='admin')
         ),
         getter=getters.start_getter,
