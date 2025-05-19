@@ -383,9 +383,9 @@ async def deeplink_menu_getter(dialog_manager: DialogManager, **kwargs):
         for user in users:
             if user.active:
                 active += 1
-            if user.entry > datetime.datetime.today() - datetime.timedelta(days=1):
+            if user.entry.timestamp() > (datetime.datetime.today() - datetime.timedelta(days=1)).timestamp():
                 today += 1
-            if user.activity > datetime.datetime.today() - datetime.timedelta(days=1):
+            if user.activity.timestamp() > (datetime.datetime.today() - datetime.timedelta(days=1)).timestamp():
                 activity += 1
             if user.sub:
                 subs += 1
@@ -401,9 +401,9 @@ async def deeplink_menu_getter(dialog_manager: DialogManager, **kwargs):
             count += 1
             if user.active:
                 active += 1
-            if user.entry > datetime.datetime.today() - datetime.timedelta(days=1):
+            if user.entry.timestamp() > (datetime.datetime.today() - datetime.timedelta(days=1)).timestamp():
                 today += 1
-            if user.activity > datetime.datetime.today() - datetime.timedelta(days=1):
+            if user.activity.timestamp() > (datetime.datetime.today() - datetime.timedelta(days=1)).timestamp():
                 activity += 1
             if user.sub:
                 subs += 1
