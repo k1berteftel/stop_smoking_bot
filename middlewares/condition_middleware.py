@@ -33,6 +33,12 @@ class RemindMiddleware(BaseMiddleware):
             job.remove()
         session: DataInteraction = data.get('session')
         translator: Translator = data.get('translator')
+        db_user = await session.get_user(user.id)
+        if not db_user:
+            await session.add_user(user_id=user.id,
+                                   username=user.username if user.username else '-',
+                                   name=user.full_name, referral=None, sub_referral=None,
+                                   join=None)
         await session.set_activity(user_id=user.id)
         result = await handler(event, data)
         bot: Bot = data.get('bot')
