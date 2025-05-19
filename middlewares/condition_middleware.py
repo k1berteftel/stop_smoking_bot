@@ -46,12 +46,15 @@ class RemindMiddleware(BaseMiddleware):
                     next_run_time=date
                 )
         else:
-            scheduler.add_job(
-                func=remind_user_ai,
-                args=[user.id, bot, session, translator, scheduler],
-                id=f'remind_{user.id}',
-                next_run_time=date
-            )
+            try:
+                scheduler.add_job(
+                    func=remind_user_ai,
+                    args=[user.id, bot, session, translator, scheduler],
+                    id=f'remind_{user.id}',
+                    next_run_time=date
+                )
+            except Exception:
+                ...
         return result
 
 
