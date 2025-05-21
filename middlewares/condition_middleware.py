@@ -39,6 +39,7 @@ class RemindMiddleware(BaseMiddleware):
                                    username=user.username if user.username else '-',
                                    name=user.full_name, referral=None, sub_referral=None,
                                    join=None)
+            await session.set_locale(user.id, 'ru')
         await session.set_activity(user_id=user.id)
         result = await handler(event, data)
         bot: Bot = data.get('bot')

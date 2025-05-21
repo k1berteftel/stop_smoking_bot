@@ -150,6 +150,16 @@ async def transfer_context(old_assistant_id: str, thread_id: str, instructions: 
             #role=message['role'],
             #content=message["content"][0]['text']['value']
         #)
+    message = await client.beta.threads.messages.create(
+        thread_id=thread_id,
+        role="user",
+        content='Просмотри всю историю переписки, чтобы не повторяться лишний раз и знать о чем говорить в следующих сообщениях '
+    )
+    print(message.__dict__)
+    run = await client.beta.threads.runs.create_and_poll(
+        thread_id=thread_id,
+        assistant_id=new_assistant.id
+    )
     return new_assistant.id
 
 
