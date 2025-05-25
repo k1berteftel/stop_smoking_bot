@@ -44,6 +44,11 @@ async def get_touch_date(user_id: int, session: DataInteraction) -> datetime.dat
                         if date.hour not in time_range:
                             date = date + datetime.timedelta(days=3)
                             break
+        else:
+            if (datetime.datetime.today() + datetime.timedelta(hours=5)).hour not in time_range:
+                date = datetime.datetime.today() + datetime.timedelta(hours=5)
+            else:
+                date = await _get_current_differ(5)
 
     return date
                         
