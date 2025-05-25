@@ -20,29 +20,30 @@ async def get_touch_date(user_id: int, session: DataInteraction) -> datetime.dat
         else:
             date = await _get_current_differ(5)
     elif user_ai.status == 3:
-        if user_ai.end_date.timestamp() > (datetime.datetime.today() - datetime.timedelta(days=3)).timestamp():
-            if (datetime.datetime.today() + datetime.timedelta(hours=3)).hour not in time_range:
-                date = datetime.datetime.today() + datetime.timedelta(hours=3)
+        if user_ai.end_date:
+            if user_ai.end_date.timestamp() > (datetime.datetime.today() - datetime.timedelta(days=3)).timestamp():
+                if (datetime.datetime.today() + datetime.timedelta(hours=3)).hour not in time_range:
+                    date = datetime.datetime.today() + datetime.timedelta(hours=3)
+                else:
+                    date = await _get_current_differ(3)
+            elif (datetime.datetime.today() + datetime.timedelta(days=3)).timestamp() < user_ai.end_date.timestamp() < (
+                    datetime.datetime.today() + datetime.timedelta(days=7)).timestamp():
+                if (datetime.datetime.today() + datetime.timedelta(hours=7)).hour not in time_range:
+                    date = datetime.datetime.today() + datetime.timedelta(hours=7)
+                else:
+                    date = await _get_current_differ(7)
+            elif (datetime.datetime.today() + datetime.timedelta(days=7)).timestamp() < user_ai.end_date.timestamp() < (
+                    datetime.datetime.today() + datetime.timedelta(days=30)).timestamp():
+                date = await _get_current_dates()
             else:
-                date = await _get_current_differ(3)
-        elif (datetime.datetime.today() + datetime.timedelta(days=3)).timestamp() < user_ai.end_date.timestamp() < (
-                datetime.datetime.today() + datetime.timedelta(days=7)).timestamp():
-            if (datetime.datetime.today() + datetime.timedelta(hours=7)).hour not in time_range:
-                date = datetime.datetime.today() + datetime.timedelta(hours=7)
-            else:
-                date = await _get_current_differ(7)
-        elif (datetime.datetime.today() + datetime.timedelta(days=7)).timestamp() < user_ai.end_date.timestamp() < (
-                datetime.datetime.today() + datetime.timedelta(days=30)).timestamp():
-            date = await _get_current_dates()
-        else:
-            if datetime.datetime.today().hour not in time_range:
-                date = datetime.datetime.today().replace(day=datetime.datetime.today().day + 3)
-            else:
-                for i in range(1, 14):
-                    date = datetime.datetime.today().replace(hour=datetime.datetime.today().hour + i)
-                    if date.hour not in time_range:
-                        date = date + datetime.timedelta(days=3)
-                        break
+                if datetime.datetime.today().hour not in time_range:
+                    date = datetime.datetime.today().replace(day=datetime.datetime.today().day + 3)
+                else:
+                    for i in range(1, 14):
+                        date = datetime.datetime.today().replace(hour=datetime.datetime.today().hour + i)
+                        if date.hour not in time_range:
+                            date = date + datetime.timedelta(days=3)
+                            break
 
     return date
                         
