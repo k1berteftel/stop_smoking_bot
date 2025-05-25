@@ -163,7 +163,7 @@ async def get_static(clb: CallbackQuery, widget: Button, dialog_manager: DialogM
         if user.join and user.active:
             transitions['deeplink']['users'] += 1
             if user.sub:
-                transitions['deeplink']['sub'] += 1
+                transitions['deeplink']['subs'] += 1
         if not user.active:
             continue
         statuses[user.AI.status] = statuses.get(user.AI.status) + 1
