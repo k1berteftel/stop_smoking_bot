@@ -125,15 +125,18 @@ async def get_static(clb: CallbackQuery, widget: Button, dialog_manager: DialogM
     transitions = {
         'basic': {
             'users': 0,
-            'subs': 0
+            'subs': 0,
+            'block': 0
         },
         'ref': {
             'users': 0,
-            'subs': 0
+            'subs': 0,
+            'block': 0
         },
         'deeplink': {
             'users': 0,
-            'subs': 0
+            'subs': 0,
+            'block': 0
         }
     }
     for user in users:
@@ -152,18 +155,27 @@ async def get_static(clb: CallbackQuery, widget: Button, dialog_manager: DialogM
             activity += 1
         if user.sub:
             subs += 1
-        if not user.join and not user.referral and user.active:
+        if not user.join and not user.referral:
             transitions['basic']['users'] += 1
             if user.sub:
-                transitions['basic']['subs'] += 1
-        if user.referral and user.active:
+                if user.active:
+                    transitions['basic']['subs'] += 1
+                else:
+                    transitions['basic']['block'] += 1
+        if user.referral:
             transitions['ref']['users'] += 1
             if user.sub:
-                transitions['ref']['subs'] += 1
-        if user.join and user.active:
+                if user.active:
+                    transitions['ref']['subs'] += 1
+                else:
+                    transitions['ref']['block'] += 1
+        if user.join:
             transitions['deeplink']['users'] += 1
             if user.sub:
-                transitions['deeplink']['subs'] += 1
+                if user.active:
+                    transitions['deeplink']['subs'] += 1
+                else:
+                    transitions['deeplink']['block'] += 1
         if not user.active:
             continue
         statuses[user.AI.status] = statuses.get(user.AI.status) + 1
@@ -176,9 +188,9 @@ async def get_static(clb: CallbackQuery, widget: Button, dialog_manager: DialogM
         f'<b>Прирост аудитории:</b>\n - За сегодня: +{entry.get("today")}\n - Вчера: +{entry.get("yesterday")}'
         f'\n - Позавчера: + {entry.get("2_day_ago")}\n\n<b>Прогресс лечения:</b>\n - Новых: {statuses.get(1)}\n'
         f' - В работе(готов): {statuses.get(2)}\n - Бросило: {statuses.get(3)}\n - Срывов: {statuses.get(4)}'
-        f'\n\n<b>Статистика по переходам:</b>\nОбычные переходы: {transitions["basic"]["users"]}/{transitions["basic"]["subs"]}'
-        f'\nРеферальные переходы: {transitions["ref"]["users"]}/{transitions["ref"]["subs"]}\nПереходы по диплинкам: '
-        f'{transitions["deeplink"]["users"]}/{transitions["deeplink"]["subs"]}'
+        f'\n\n<b>Статистика по переходам:</b>\nОбычные переходы: {transitions["basic"]["users"]}/{transitions["basic"]["subs"]}/{transitions['basic']['block']}'
+        f'\nРеферальные переходы: {transitions["ref"]["users"]}/{transitions["ref"]["subs"]}/{transitions['ref']['block']}\nПереходы по диплинкам: '
+        f'{transitions["deeplink"]["users"]}/{transitions["deeplink"]["subs"]}/{transitions['deeplink']['block']}'
     )
     await clb.message.answer(text)
 

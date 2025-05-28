@@ -1,7 +1,7 @@
 import datetime
 
 from aiogram import Router, F, Bot
-from aiogram.filters import CommandStart, CommandObject, Command
+from aiogram.filters import CommandStart, CommandObject, Command, and_f, StateFilter
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardMarkup, KeyboardButton
 from aiogram_dialog import DialogManager, StartMode
 from aiogram.fsm.context import FSMContext
@@ -127,7 +127,7 @@ async def start_vip_dialog(msg: Message, dialog_manager: DialogManager, state: F
     #await msg.reply(msg.photo[-1].file_id)
 
 
-@user_router.message(F.text)
+@user_router.message(and_f(F.text, ~F.state.in_([states.startSG.get_voucher, states.startSG.get_derive_card, states.startSG.get_derive_amount])))
 async def answer_message(msg: Message, dialog_manager: DialogManager, state: FSMContext, session: DataInteraction, scheduler: AsyncIOScheduler, translator: Translator):
     if dialog_manager.has_context():
         await dialog_manager.done()

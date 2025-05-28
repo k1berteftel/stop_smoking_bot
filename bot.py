@@ -19,7 +19,7 @@ from handlers.payment_handlers import payment_router
 from handlers.user_handlers import user_router
 from handlers.admin_handlers import admin_router
 from dialogs import get_dialogs
-from utils.start_service import start_schedulers
+from utils.start_service import start_schedulers, switch_malling
 from utils.nats_connect import connect_to_nats
 from storage.nats_storage import NatsStorage
 from middlewares import TransferObjectsMiddleware, RemindMiddleware
@@ -54,6 +54,7 @@ async def main():
     #await database.create_tables(Base)
     session = database.session()
     #await configurate_tables(session)
+    await switch_malling(session)
 
     scheduler: AsyncIOScheduler = AsyncIOScheduler()
     scheduler.timezone = timezone
@@ -67,7 +68,7 @@ async def main():
 
     await start_schedulers(session, scheduler, bot)
     # подключаем роутеры
-    dp.include_routers(*get_dialogs(), user_router, admin_router, payment_router)
+    dp.include_routers(user_router, *get_dialogs(), admin_router, payment_router)
 
     # подключаем middleware
     dp.update.middleware(TransferObjectsMiddleware())

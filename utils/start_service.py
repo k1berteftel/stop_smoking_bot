@@ -30,3 +30,10 @@ async def start_schedulers(session: async_sessionmaker, scheduler: AsyncIOSchedu
                 id=f'remind_{user.id}',
                 next_run_time=date
             )
+
+
+async def switch_malling(sessions: async_sessionmaker):
+    session = DataInteraction(sessions)
+    users = await session.get_users()
+    for user in users:
+        await session.set_malling_status(user.user_id, True)
