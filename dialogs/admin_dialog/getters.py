@@ -188,9 +188,9 @@ async def get_static(clb: CallbackQuery, widget: Button, dialog_manager: DialogM
         f'<b>Прирост аудитории:</b>\n - За сегодня: +{entry.get("today")}\n - Вчера: +{entry.get("yesterday")}'
         f'\n - Позавчера: + {entry.get("2_day_ago")}\n\n<b>Прогресс лечения:</b>\n - Новых: {statuses.get(1)}\n'
         f' - В работе(готов): {statuses.get(2)}\n - Бросило: {statuses.get(3)}\n - Срывов: {statuses.get(4)}'
-        f'\n\n<b>Статистика по переходам:</b>\nОбычные переходы: {transitions["basic"]["users"]}/{transitions["basic"]["subs"]}/{transitions['basic']['block']}'
-        f'\nРеферальные переходы: {transitions["ref"]["users"]}/{transitions["ref"]["subs"]}/{transitions['ref']['block']}\nПереходы по диплинкам: '
-        f'{transitions["deeplink"]["users"]}/{transitions["deeplink"]["subs"]}/{transitions['deeplink']['block']}'
+        f'\n\n<b>Статистика по переходам:</b>\nОбычные переходы: {transitions["basic"]["users"]}/{transitions["basic"]["subs"]}/{transitions["basic"]["block"]}'
+        f'\nРеферальные переходы: {transitions["ref"]["users"]}/{transitions["ref"]["subs"]}/{transitions["ref"]["block"]}\nПереходы по диплинкам: '
+        f'{transitions["deeplink"]["users"]}/{transitions["deeplink"]["subs"]}/{transitions["deeplink"]["block"]}'
     )
     await clb.message.answer(text)
 
