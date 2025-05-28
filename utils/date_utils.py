@@ -9,6 +9,7 @@ time_range.extend(range(0, 11))
 
 async def get_touch_date(user_id: int, session: DataInteraction) -> datetime.datetime | list[datetime.datetime]:
     user_ai = await session.get_user_ai(user_id)
+    date = await _get_current_differ(12)
     if user_ai.status == 1:
         if (datetime.datetime.today() + datetime.timedelta(hours=12)).hour not in time_range:
             date = datetime.datetime.today() + datetime.timedelta(hours=12)
