@@ -54,7 +54,7 @@ async def main():
     #await database.create_tables(Base)
     session = database.session()
     #await configurate_tables(session)
-    await switch_malling(session)
+    #await switch_malling(session)
 
     scheduler: AsyncIOScheduler = AsyncIOScheduler()
     scheduler.timezone = timezone

@@ -102,6 +102,7 @@ class VouchersTable(Base):
     code: Mapped[str] = mapped_column(String, unique=True)
     amount: Mapped[int] = mapped_column(Integer)
     inputs: Mapped[int] = mapped_column(Integer, default=0)
+    percent: Mapped[int] = mapped_column(Integer, default=100, server_default=None, nullable=True)
 
 
 class UserVouchersTable(Base):

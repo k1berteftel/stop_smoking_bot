@@ -341,7 +341,7 @@ async def voucher_menu_getter(dialog_manager: DialogManager, **kwargs):
     vouchers = await session.get_vouchers()
     text = ''
     for voucher in vouchers:
-        text += f'{voucher.code} - {voucher.amount} месяцев - {voucher.inputs} вождений\n'
+        text += f'{voucher.code}({voucher.percent}%) - {voucher.amount} месяцев - {voucher.inputs} вождений\n'
     return {
         'codes': text
     }
@@ -354,8 +354,23 @@ async def get_voucher_amount(msg: Message, widget: ManagedTextInput, dialog_mana
         await msg.answer('Введенные данные должны быть числом, пожалуйста попробуйте снова')
         return
     session: DataInteraction = dialog_manager.middleware_data.get('session')
+    dialog_manager.dialog_data['amount'] = amount
+    await dialog_manager.switch_to(adminSG.get_voucher_percent)
+
+
+async def get_voucher_percent(msg: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
+    try:
+        percent = int(text)
+    except Exception:
+        await msg.answer('Введенные данные должны быть числом, пожалуйста попробуйте снова')
+        return
+    if percent not in range(0, 101):
+        await msg.answer('Число процента должно быть в диапазоне от 0 до 100')
+        return
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
     code = dialog_manager.dialog_data.get('code')
-    await session.add_voucher(code, amount)
+    amount = dialog_manager.dialog_data.get('amount')
+    await session.add_voucher(code, amount, percent)
     await dialog_manager.switch_to(adminSG.vouchers_menu)
 
 

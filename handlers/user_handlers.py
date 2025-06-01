@@ -14,6 +14,7 @@ from database.action_data_class import DataInteraction
 from utils.translator.translator import Translator
 from utils.translator import Translator as create_translator
 from utils.schdulers import bot_writing
+from filters.custom_filter import MsgStateFilter
 from states import state_groups as states
 
 
@@ -74,8 +75,8 @@ async def start_dialog(msg: Message, dialog_manager: DialogManager, session: Dat
                                name=msg.from_user.full_name, referral=referral, sub_referral=sub_referral, join=deeplink)
     #await dialog_manager.start(states.languagesSG.start, mode=StartMode.RESET_STACK)
     user = await session.get_user(msg.from_user.id)
-    await session.set_locale(msg.from_user.id, 'ru')
     if not user.locale:
+        await session.set_locale(msg.from_user.id, 'ru')
         translator: Translator = create_translator('ru')
         message = await msg.answer(translator['writing_action'])
         await msg.bot.send_chat_action(
@@ -124,10 +125,11 @@ async def start_vip_dialog(msg: Message, dialog_manager: DialogManager, state: F
 
 #@user_router.message()
 #async def get_photo_id(msg: Message):
+    #print('pass')
     #await msg.reply(msg.photo[-1].file_id)
 
 
-@user_router.message(and_f(F.text, ~F.state.in_([states.startSG.get_voucher, states.startSG.get_derive_card, states.startSG.get_derive_amount])))
+@user_router.message(MsgStateFilter())
 async def answer_message(msg: Message, dialog_manager: DialogManager, state: FSMContext, session: DataInteraction, scheduler: AsyncIOScheduler, translator: Translator):
     if dialog_manager.has_context():
         await dialog_manager.done()
@@ -149,6 +151,10 @@ async def answer_message(msg: Message, dialog_manager: DialogManager, state: FSM
         await state.update_data(assistant_id=assistant_id, thread_id=thread_id)
     if user_ai.status != 1 and not user.sub:
         keyboard = await get_only_vip_keyboard(translator)
+        #await msg.answer(
+            #text=translator['only_vip_warning'],
+            #reply_markup=keyboard
+        #)
         await msg.answer_photo(
             photo='AgACAgIAAxkBAAIud2gX9LqFipbhoZw92X0xTterBXuTAAIVAzIbhhrBSDeTVUT3q5k1AQADAgADeQADNgQ',
             caption=translator['only_vip_warning'],

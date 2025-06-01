@@ -134,11 +134,12 @@ class DataInteraction():
             ))
             await session.commit()
 
-    async def add_voucher(self, code: str, amount: int):
+    async def add_voucher(self, code: str, amount: int, percent: int):
         async with self._sessions() as session:
             await session.execute(insert(VouchersTable).values(
                 code=code,
-                amount=amount
+                amount=amount,
+                percent=percent
             ))
             await session.commit()
 
@@ -156,9 +157,9 @@ class DataInteraction():
                 result = await session.scalar(select(UserAI).where(UserAI.user_id == user_id))
         return result
 
-    async def get_voucher_amount(self, code: str):
+    async def get_voucher(self, code: str):
         async with self._sessions() as session:
-            result = await session.scalar(select(VouchersTable.amount).where(VouchersTable.code == code))
+            result = await session.scalar(select(VouchersTable).where(VouchersTable.code == code))
         return result
 
     async def get_vouchers(self):

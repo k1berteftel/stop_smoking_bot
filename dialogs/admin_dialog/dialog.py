@@ -181,6 +181,15 @@ admin_dialog = Dialog(
         state=adminSG.get_voucher_amount
     ),
     Window(
+        Const('Введите процент скидки на подписку, который получит пользователь при ввода кода ваучера'),
+        TextInput(
+            id='get_voucher_percent',
+            on_success=getters.get_voucher_percent
+        ),
+        SwitchTo(Const('🔙 Назад'), id='back_get_voucher_amount', state=adminSG.get_voucher_amount),
+        state=adminSG.get_voucher_percent
+    ),
+    Window(
         Const('Выберите код ваучера который вы хотели бы удалить'),
         Group(
             Select(

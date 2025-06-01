@@ -64,8 +64,12 @@ async def get_voucher(msg: Message, widget: ManagedTextInput, dialog_manager: Di
     translator: Translator = dialog_manager.middleware_data.get('translator')
     await msg.delete()
     if await session.check_voucher(msg.from_user.id, text):
-        amount = await session.get_voucher_amount(text)
-        await session.set_sub_end(msg.from_user.id, amount)
+        voucher = await session.get_voucher(text)
+        if voucher.percent is not None and voucher.percent != 100:
+            dialog_manager.dialog_data['percent'] = voucher.percent
+            await dialog_manager.switch_to(startSG.rub_payment_menu)
+            return
+        await session.set_sub_end(msg.from_user.id, voucher.amount)
         await msg.answer(translator['success_voucher_notification'])
         keyboard = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text='📍Меню')]], resize_keyboard=True)
         message = await msg.answer(translator['writing_action'])
@@ -176,9 +180,11 @@ async def rub_payment_getter(event_from_user: User, dialog_manager: DialogManage
     scheduler: AsyncIOScheduler = dialog_manager.middleware_data.get('scheduler')
     session: DataInteraction = dialog_manager.middleware_data.get('session')
     translator: Translator = dialog_manager.middleware_data.get('translator')
+    percent = dialog_manager.dialog_data.get('percent')
     price = (await session.get_prices()).sub_price
+    if percent:
+        price = price * (1 - (percent / 100))
     bot: Bot = dialog_manager.middleware_data.get('bot')
-    type = dialog_manager.dialog_data.get('type')
     payment = await Payment.create({
         "amount": {
             "value": str(float(price)),
@@ -194,7 +200,7 @@ async def rub_payment_getter(event_from_user: User, dialog_manager: DialogManage
             },
             'items': [
                 {
-                    'description': "Приобретение генераций" if type == 'gen' else "Приобретение подписки",
+                    'description': "Приобретение подписки",
                     "amount": {
                         "value": str(float(price)),
                         "currency": "RUB"
@@ -205,14 +211,14 @@ async def rub_payment_getter(event_from_user: User, dialog_manager: DialogManage
             ]
         },
         "capture": True,
-        "description": "Приобретение генераций" if type == 'gen' else "Приобретение подписки"
+        "description": "Приобретение подписки"
     }, uuid.uuid4())
     url = payment.confirmation.confirmation_url
     scheduler.add_job(
         check_payment,
         'interval',
         args=[payment.id, event_from_user.id, bot, scheduler, session, translator],
-        kwargs={'amount': price, 'type': type},
+        kwargs={'amount': price},
         id=f'payment_{event_from_user.id}',
         seconds=5
     )

@@ -33,6 +33,7 @@ class adminSG(StatesGroup):
     vouchers_menu = State()
     get_voucher = State()
     get_voucher_amount = State()
+    get_voucher_percent = State()
     del_voucher = State()
     prices_menu = State()
     get_amount = State()
