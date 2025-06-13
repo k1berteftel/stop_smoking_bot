@@ -28,9 +28,10 @@ class RemindMiddleware(BaseMiddleware):
         if user is None:
             return await handler(event, data)
         scheduler: AsyncIOScheduler = data.get('scheduler')
-        job = scheduler.get_job(job_id=f'remind_{user.id}')
-        if job:
-            job.remove()
+        jobs = scheduler.get_jobs()
+        for job in jobs:
+            if job.id.startswith('remind') and job.id.endswith(str(user.id)):
+                job.remove()
         session: DataInteraction = data.get('session')
         translator: Translator = data.get('translator')
         db_user = await session.get_user(user.id)
@@ -46,12 +47,15 @@ class RemindMiddleware(BaseMiddleware):
 
         date = await get_touch_date(user.id, session)
         if isinstance(date, list):
+            count = 1
             for date in date:
                 scheduler.add_job(
                     func=remind_user_ai,
                     args=[user.id, bot, session, translator, scheduler],
-                    next_run_time=date
+                    next_run_time=date,
+                    id=f'remind_{count}_{user.id}'
                 )
+                count += 1
         else:
             try:
                 scheduler.add_job(
