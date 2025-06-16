@@ -216,12 +216,14 @@ async def answer_message(msg: Message, dialog_manager: DialogManager, state: FSM
             if not job.get('description'):
                 continue
             try:
-                date = datetime.datetime.strptime(job.get('time'), '%Y-%m-%d %H:%M:%S')
-                scheduler.add_job(
-                    bot_writing,
-                    args=[msg.from_user.id, msg.bot, session, job.get('description')],
-                    next_run_time=date
-                )
+                pass
+                #date = datetime.datetime.strptime(job.get('time'), '%Y-%m-%d %H:%M:%S')
+                #jobs = scheduler.get_jobs()
+                #scheduler.add_job(
+                    #bot_writing,
+                    #args=[msg.from_user.id, msg.bot, session, job.get('description')],
+                    #next_run_time=date
+                #)
             except Exception as err:
                 print('scheduler error', err)
                 continue

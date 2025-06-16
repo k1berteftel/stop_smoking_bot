@@ -28,12 +28,13 @@ config: Config = load_config()
 
 async def start_getter(event_from_user: User, dialog_manager: DialogManager, **kwargs):
     session: DataInteraction = dialog_manager.middleware_data.get('session')
+    admins = [user.user_id for user in await session.get_admins()]
     translator: Translator = dialog_manager.middleware_data.get('translator')
     user = await session.get_user(event_from_user.id)
     media_id = MediaId(file_id='AgACAgIAAxkBAAIHymf6rE2IUtTRhaBL9ZNgDDC6hntsAAKt7DEbLfjYS4O6Klscz1uzAQADAgADeQADNgQ')
     media = MediaAttachment(file_id=media_id, type=ContentType.PHOTO)
     admin = False
-    if event_from_user.id in config.bot.admin_ids:
+    if event_from_user.id in config.bot.admin_ids or event_from_user in admins:
         admin = True
     return {
         'text': translator['menu'],
